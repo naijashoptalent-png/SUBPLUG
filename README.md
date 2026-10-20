@@ -2,7 +2,7 @@
 
 SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platform for selling airtime, data bundles, electricity tokens, and cable TV subscriptions in Nigeria. It includes a customer wallet, an append-only financial ledger, verified payment webhooks, provider adapters, a support desk, referrals, a staff/admin portal, and automated tests.
 
-> **This repository ships with sandbox adapters only.** The default VTU and payment providers are deterministic mocks. They do not deliver real airtime, data, electricity, or cable services and do not move real money. Before accepting customers you must connect a licensed VTU provider and a live payment gateway, complete the production checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), and obtain the necessary regulatory and commercial approvals.
+> **Provider modes are explicit.** The VTU adapter is configured for the live SME API (`VTU_PROVIDER=sme`). Airtime and data purchases are sent to that provider and can deliver real services. Wallet funding still uses the mock payment gateway until Paystack credentials are supplied, so **do not treat test wallet funds as real money**. Cable and electricity stay disabled until the numeric provider/plan IDs enabled on the SME API account are added to `VTU_CATALOGUE_FILE`. Complete the production checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) before accepting customers.
 
 ---
 
@@ -12,7 +12,7 @@ SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platfor
 - [Technology](#technology)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
-- [Sandbox behaviour](#sandbox-behaviour)
+- [Provider modes](#provider-modes)
 - [Testing](#testing)
 - [Production build](#production-build)
 - [Security highlights](#security-highlights)
@@ -26,8 +26,8 @@ SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platfor
 ### Customer experience
 
 - Registration, login, email verification, password reset, optional TOTP two-factor authentication.
-- Wallet funded through a hosted checkout flow, with sandbox simulation for local development.
-- Airtime purchase with network discounts and quote preview.
+- Wallet funded through a hosted checkout flow. The mock gateway is used only until live Paystack keys are configured.
+- Airtime purchase with quote preview; network discounts apply in sandbox mode, while live SME purchases charge face value.
 - Data bundle purchase from a catalogue of provider plans.
 - Electricity payment with meter validation and token delivery.
 - Cable TV payment with smartcard validation and package selection.
@@ -151,11 +151,22 @@ cp server/.env.example server/.env
 Copy-Item server/.env.example server/.env
 ```
 
-At minimum, set a long random `JWT_ACCESS_SECRET` and the administrator credentials used by the seed script:
+At minimum, set a long random `JWT_ACCESS_SECRET`, the administrator credentials used by the seed script, and the live VTU settings:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
+
+```dotenv
+VTU_PROVIDER=sme
+ALLOW_MOCK_VTU=false
+VTU_API_BASE_URL=https://smeapi.com.ng
+VTU_API_KEY=<your SME API key>
+VTU_CATALOGUE_FILE=
+CATALOGUE_SYNC_INTERVAL_MS=900000
+```
+
+Keep `VTU_API_KEY` in `server/.env` only. Airtime and data work with the base URL and key; cable/electricity also require the numeric IDs from the provider account (see [Cable and electricity IDs](#cable-and-electricity-ids)). Wallet funding remains on the mock gateway until `PAYMENT_GATEWAY=paystack` and valid Paystack keys are set.
 
 The API validates its environment at boot and refuses to start when required values are missing. See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for every variable.
 
@@ -173,7 +184,7 @@ cp client/.env.example client/.env
 npm run seed
 ```
 
-This creates or updates the sandbox catalogue, default settings, and the administrator defined by `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`, and `ADMIN_PHONE`.
+This creates or updates the catalogue from the active VTU provider, default settings, and the administrator defined by `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`, and `ADMIN_PHONE`. With `VTU_PROVIDER=sme`, the command fetches live data plans and applies the configured markup. A failed or empty provider response leaves the previous catalogue unchanged.
 
 ### 5. Start the applications
 
@@ -206,11 +217,52 @@ Run these from the repository root:
 
 ---
 
-## Sandbox behaviour
+## Provider modes
 
-### Mock VTU outcomes
+### Live VTU (SME API)
 
-The mock VTU adapter chooses an outcome from the recipient phone number:
+Set `VTU_PROVIDER=sme`. The adapter sends airtime and data purchases to `https://smeapi.com.ng` using `Authorization: Token <VTU_API_KEY>`. Provider prices are received in Naira and converted to integer kobo; the configured markup produces the customer price. Manual admin pricing is preserved across syncs.
+
+Provider prices can change. The scheduler refreshes the catalogue every `CATALOGUE_SYNC_INTERVAL_MS` (default 15 minutes), and `npm run seed` performs an immediate sync. A failed or empty provider response leaves the previous catalogue in place. Only plans for the active provider can be purchased.
+
+Provider responses are classified as `SUCCESS`, `FAILED`, `PENDING`, or `UNCERTAIN`. Ambiguous responses never become success automatically: funds stay reserved and the transaction goes to `REQUIRES_REVIEW` for reconciliation.
+
+The live adapter currently offers MTN, Glo, and Airtel. 9mobile is intentionally disabled because its numeric network ID has not been confirmed; it will reject a 9mobile request rather than guess. Add it only after provider confirmation and a controlled live test.
+
+### Cable and electricity IDs
+
+Cable TV and electricity remain disabled until the numeric IDs enabled on the SME API account are supplied. The adapter does not guess provider or plan IDs.
+
+1. Copy `server/config/vtu-catalogue.example.json` to `server/config/vtu-catalogue.json`.
+2. Add only IDs confirmed in the SME API account/dashboard.
+3. Set `VTU_CATALOGUE_FILE=server/config/vtu-catalogue.json`.
+4. Restart the API and run `npm run seed`.
+
+```json
+{
+  "cableProviders": [
+    { "code": "DSTV", "name": "DStv", "providerId": "CONFIRMED_NUMERIC_ID" }
+  ],
+  "cablePackages": [
+    {
+      "providerPlanId": "CONFIRMED_NUMERIC_ID",
+      "network": "DSTV",
+      "name": "DStv Compact",
+      "validity": "1 month",
+      "costNaira": 19000
+    }
+  ],
+  "electricityProviders": [
+    { "code": "IKEDC", "name": "Ikeja Electric", "providerId": "CONFIRMED_NUMERIC_ID" }
+  ]
+}
+```
+
+Replace every `CONFIRMED_NUMERIC_ID` with a verified value. A wrong numeric ID can send a real transaction to the wrong provider. Airtime, data, and status queries do not need this file.
+
+### Sandbox VTU (optional)
+
+For local-only testing, set `VTU_PROVIDER=mock` and `ALLOW_MOCK_VTU=true`. The mock adapter chooses an outcome from the recipient phone number:
 
 | Phone ending | Outcome | Result in SubPlug |
 | --- | --- | --- |
@@ -219,7 +271,7 @@ The mock VTU adapter chooses an outcome from the recipient phone number:
 | `2222` | Uncertain / timeout | Transaction becomes `REQUIRES_REVIEW`; funds remain held |
 | anything else | Success | Transaction becomes `SUCCESSFUL` |
 
-Electricity tokens generated by the sandbox start with `SANDBOX-`. Meter validation returns clearly labelled demo customer data. No external service is contacted.
+Electricity tokens generated by the sandbox start with `SANDBOX-`. Meter validation returns clearly labelled demo customer data. No external service is contacted. Mock VTU is rejected in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true`.
 
 ### Mock payments
 
@@ -230,7 +282,7 @@ With `PAYMENT_GATEWAY=mock` and `ALLOW_MOCK_PAYMENTS=true`:
 3. Success is confirmed through the sandbox-only endpoint `POST /api/v1/wallet/funding/:reference/simulate`.
 4. The wallet is credited only through the normal `confirmFunding` path, using the same ledger and idempotency rules as a real gateway callback.
 
-The UI marks sandbox funding and sandbox purchases. Mock providers are rejected in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true` is explicitly set.
+**Test wallet funds are not real money.** If live VTU is active, a purchase funded by the mock gateway is still sent to the live provider. The UI shows a "Test funding" notice for this mixed mode. Mock payments are rejected in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true`.
 
 ---
 
@@ -283,6 +335,7 @@ Serve `client/dist/` from a static host or CDN, with a SPA rewrite to `index.htm
 - Configure `ADDITIONAL_CORS_ORIGINS` only with origins you control.
 - Keep `AUTO_VERIFY_EMAILS=false`, `EXPOSE_DEV_EMAILS=false`, and `ALLOW_SANDBOX_IN_PRODUCTION=false` in production.
 - Rotate Paystack and VTU credentials if they have ever been exposed.
+- Never point production at a database that contains mock-funded wallets. Mock funding creates real ledger entries, and those balances could be spent on live VTU services. Start production on a clean database or remove test credits through an audited migration.
 - Grant `ADMIN` only to staff who need financial authority. `SUPPORT` can read operational data and reply to tickets but cannot move money or change settings.
 - Review the audit log and reconciliation dashboard after every deployment that touches financial logic.
 
@@ -301,12 +354,11 @@ Serve `client/dist/` from a static host or CDN, with a SPA rewrite to `index.htm
 
 ## Known limitations
 
-- The HTTP VTU adapter is a **template**. Field mappings and endpoint paths must be implemented against the documentation of a licensed provider before it can be used.
+- Cable TV and electricity require numeric provider/plan IDs from the SME API account. They stay disabled until those IDs are added to `VTU_CATALOGUE_FILE`; no IDs are guessed.
 - The payment integration is production-shaped (initialise, verify, signed webhooks, deduplication) but has only been exercised against the mock provider; certify it against Paystack test and live keys.
 - There is no KYC, AML, sanctions screening, or credit facility. Those are business and regulatory requirements outside this codebase.
 - There is no SMS gateway integration; notification records are in-app only.
 - Transactional email requires SMTP configuration. Without it, development logs email previews instead of sending.
 - The in-process scheduler must not be used with multiple API instances. Enable Redis/BullMQ for horizontal scaling.
 - There is no built-in object storage, dispute evidence upload, or chargeback workflow.
-- The seeded plans and prices are sandbox data, not commercial pricing.
-"# SUBPLUG" 
+- Live data prices come from the SME API and can change; the scheduled sync keeps the catalogue fresh, but provider-side price changes between syncs remain a commercial risk. 

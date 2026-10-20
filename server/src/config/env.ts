@@ -57,6 +57,9 @@ const envSchema = z.object({
   USE_QUEUES: bool(false),
   REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
   RECONCILE_INTERVAL_MS: int(300000, 30000),
+  // Refresh live VTU prices and availability. Provider prices can change, so a
+  // stale catalogue is a commercial risk even when the adapter is live.
+  CATALOGUE_SYNC_INTERVAL_MS: int(900000, 60000),
 
   EMAIL_FROM: z.string().default('SubPlug <no-reply@example.com>'),
   EMAIL_HOST: z.string().optional().default(''),

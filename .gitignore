@@ -10,4 +10,6 @@ playwright-report/
 test-results/
 .DS_Store
 *.log
+# Private live provider IDs and prices
+server/config/vtu-catalogue.json
 

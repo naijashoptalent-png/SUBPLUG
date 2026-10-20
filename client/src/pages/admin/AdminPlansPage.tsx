@@ -397,7 +397,7 @@ export function AdminPlansPage() {
             &ldquo;preserve manual plan pricing&rdquo; is enabled in system settings.
           </p>
           <Alert variant="info">
-            A sync is additive and updates existing records by provider plan ID. It does not delete transaction history.
+            A sync updates plans by provider plan ID and disables plans that the provider no longer returns. Plans from other providers are also disabled. Transaction history is never deleted. An empty provider response leaves the catalogue unchanged.
           </Alert>
         </div>
       </Dialog>

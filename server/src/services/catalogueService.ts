@@ -35,7 +35,15 @@ export async function getNetworks() {
 }
 
 export async function listDataPlans(network?: string) {
-  const filter: Record<string, unknown> = { service: 'DATA', enabled: true, provider: getVtuProvider().key };
+  const limits = await getSetting('limits');
+  const filter: Record<string, unknown> = {
+    service: 'DATA',
+    enabled: true,
+    provider: getVtuProvider().key,
+    // Do not show plans that the purchase service would reject. In particular,
+    // cheap bundles below the configured minimum cause a confusing late error.
+    sellingPriceMinor: { $gte: limits.dataMinMinor, $lte: limits.dataMaxMinor },
+  };
   if (network) filter.network = network.toUpperCase();
   const plans = await ServicePlan.find(filter).sort({ costMinor: 1 }).lean();
   return plans.map((plan) => ({
@@ -150,10 +158,19 @@ export async function getEnabledPlan(service: ServiceType, providerPlanId: strin
   const plan = await ServicePlan.findOne({
     service,
     providerPlanId,
+    provider: getVtuProvider().key,
     enabled: true,
   }).lean();
   if (!plan) throw AppError.badRequest('This plan is not available. Refresh the catalogue and try again.', 'INVALID_PLAN');
   return plan;
+}
+
+/**
+ * Live SME airtime is billed at face value, so a configured customer discount
+ * would be funded by the platform. Keep discounts for sandbox/demo mode only.
+ */
+export function effectiveAirtimeDiscountPercent(isSandbox: boolean, configuredPercent: number): number {
+  return isSandbox ? configuredPercent : 0;
 }
 
 export async function quoteAirtime(network: string, faceValueMinor: number) {
@@ -172,7 +189,12 @@ export async function quoteAirtime(network: string, faceValueMinor: number) {
       'AMOUNT_OUT_OF_RANGE'
     );
   }
-  const percent = (discounts.airtimePercent as Record<string, number>)[normalised] ?? 0;
+  const provider = getVtuProvider();
+  const configuredPercent = (discounts.airtimePercent as Record<string, number>)[normalised] ?? 0;
+  // SME charges airtime at face value; it does not expose a provider discount.
+  // Applying a configured discount on a live provider would make the platform
+  // fund the difference, so discounts remain a sandbox-only promotion.
+  const percent = effectiveAirtimeDiscountPercent(provider.isSandbox, configuredPercent);
   const discountMinor = percentOf(faceValueMinor, percent);
   const feeMinor = percentOf(faceValueMinor - discountMinor, discounts.serviceFeePercent);
   return {
@@ -182,7 +204,7 @@ export async function quoteAirtime(network: string, faceValueMinor: number) {
     discountMinor,
     feeMinor,
     payableMinor: faceValueMinor - discountMinor + feeMinor,
-    isSandbox: getVtuProvider().isSandbox,
+    isSandbox: provider.isSandbox,
   };
 }
 
@@ -205,6 +227,9 @@ export async function syncCatalogue(actorId?: string) {
   for (const network of networks) {
     const plans = await provider.getDataPlans(network.code);
     dataPlans.push(...plans);
+  }
+  if (!dataPlans.length) {
+    throw AppError.serviceUnavailable('Provider returned no data plans; catalogue not changed', 'EMPTY_CATALOGUE');
   }
   const [discos, cableProviders] = await Promise.all([
     provider.getElectricityProviders(),
@@ -337,6 +362,13 @@ export async function syncCatalogue(actorId?: string) {
     );
   }
 
+  // Only one VTU provider is active at a time. Disable plans belonging to the
+  // old sandbox or a previous provider so stale IDs cannot be purchased.
+  await ServicePlan.updateMany(
+    { provider: { $ne: provider.key }, enabled: true },
+    { $set: { enabled: false, 'metadata.stale': true } }
+  );
+
   await Provider.findOneAndUpdate(
     { key: provider.key },
     {
@@ -380,7 +412,10 @@ export async function listAdminPlans(options: {
   page: number;
   limit: number;
 }) {
-  const filter: Record<string, unknown> = { 'metadata.kind': { $in: ['PLAN', 'PACKAGE', 'DISCO', 'CABLE_NETWORK'] } };
+  const filter: Record<string, unknown> = {
+    provider: getVtuProvider().key,
+    'metadata.kind': { $in: ['PLAN', 'PACKAGE', 'DISCO', 'CABLE_NETWORK'] },
+  };
   if (options.service) filter.service = options.service;
   if (options.network) filter.network = options.network.toUpperCase();
   if (options.search) filter.name = { $regex: options.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
@@ -402,6 +437,9 @@ export async function updatePlan(
   if (!Types.ObjectId.isValid(planId)) throw AppError.badRequest('Invalid plan id', 'INVALID_ID');
   const plan = await ServicePlan.findById(planId);
   if (!plan) throw AppError.notFound('Plan not found');
+  if (plan.provider !== getVtuProvider().key) {
+    throw AppError.badRequest('This plan belongs to an inactive provider and cannot be edited.', 'INACTIVE_PROVIDER_PLAN');
+  }
   if (updates.enabled !== undefined) {
     plan.enabled = updates.enabled;
     plan.metadata = { ...(plan.metadata ?? {}), adminDisabled: !updates.enabled };

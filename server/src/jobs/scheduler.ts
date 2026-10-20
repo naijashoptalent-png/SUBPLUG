@@ -2,6 +2,7 @@ import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { env, isProduction } from '../config/env';
 import { logger } from '../config/logger';
+import { syncCatalogue } from '../services/catalogueService';
 import { runReconciliationCycle, runWalletDriftCheck } from './reconciliationJobs';
 
 let timers: NodeJS.Timeout[] = [];
@@ -12,6 +13,16 @@ let redis: IORedis | null = null;
 async function execute(jobName: string) {
   if (jobName === 'wallet-drift') {
     return runWalletDriftCheck();
+  }
+  if (jobName === 'catalogue-sync') {
+    try {
+      return await syncCatalogue();
+    } catch (error) {
+      // Keep the last known-good catalogue when the provider is temporarily
+      // unavailable. The next scheduled run will retry.
+      logger.error({ err: error }, 'Scheduled VTU catalogue sync failed; keeping previous catalogue');
+      return null;
+    }
   }
   return runReconciliationCycle();
 }
@@ -52,7 +63,20 @@ async function startBullMq() {
       jobId: 'wallet-drift-repeat',
     }
   );
-  logger.info({ redis: env.REDIS_URL.replace(/\/\/.*@/, '//***@') }, 'BullMQ scheduler started');
+  await queue.add(
+    'catalogue-sync',
+    {},
+    {
+      repeat: { every: env.CATALOGUE_SYNC_INTERVAL_MS },
+      removeOnComplete: 20,
+      removeOnFail: 50,
+      jobId: 'catalogue-sync-repeat',
+    }
+  );
+  logger.info(
+    { redis: env.REDIS_URL.replace(/\/\/.*@/, '//***@'), catalogueSyncIntervalMs: env.CATALOGUE_SYNC_INTERVAL_MS },
+    'BullMQ scheduler started'
+  );
 }
 
 export async function startScheduler() {
@@ -81,8 +105,17 @@ export async function startScheduler() {
     runWalletDriftCheck().catch((error) => logger.error({ err: error }, 'Wallet drift check failed'));
   }, 6 * 60 * 60 * 1000);
   driftTimer.unref();
-  timers = [initial, reconcileTimer, driftTimer];
-  logger.info({ intervalMs: env.RECONCILE_INTERVAL_MS }, 'In-process reconciliation scheduler started');
+  const catalogueTimer = setInterval(() => {
+    syncCatalogue().catch((error) =>
+      logger.error({ err: error }, 'Scheduled VTU catalogue sync failed; keeping previous catalogue')
+    );
+  }, env.CATALOGUE_SYNC_INTERVAL_MS);
+  catalogueTimer.unref();
+  timers = [initial, reconcileTimer, driftTimer, catalogueTimer];
+  logger.info(
+    { intervalMs: env.RECONCILE_INTERVAL_MS, catalogueSyncIntervalMs: env.CATALOGUE_SYNC_INTERVAL_MS },
+    'In-process reconciliation scheduler started'
+  );
 }
 
 export async function stopScheduler() {

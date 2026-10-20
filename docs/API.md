@@ -247,7 +247,7 @@ GET /api/v1/services/airtime-quote?network=MTN&amountMinor=10000
 }
 ```
 
-The discount comes from the runtime `discounts` setting, not from a fixed hard-coded value.
+The discount comes from the runtime `discounts` setting, not from a fixed hard-coded value. In live SME mode the quote returns `discountPercent: 0` and `discountMinor: 0` because the provider deducts the full face value; configured airtime discounts apply to sandbox/demo purchases only.
 
 ### Meter validation
 
@@ -271,7 +271,7 @@ X-CSRF-Token: …
 }
 ```
 
-The client must receive `valid: true` before enabling the electricity payment button. The server repeats validation rules at purchase time.
+The client must receive `valid: true` before enabling the electricity payment button. The server repeats validation rules at purchase time. The demo customer fields above come from the mock VTU adapter; with the live SME adapter, names and addresses come from the provider and `isSandbox` is `false`.
 
 ### Public settings example
 
@@ -293,12 +293,12 @@ The client must receive `valid: true` before enabling the electricity payment bu
     },
     "maintenance": { "enabled": false, "message": "…" },
     "referralsEnabled": true,
-    "environment": { "vtuSandbox": true, "paymentSandbox": true, "paymentGateway": "mock" }
+    "environment": { "vtuSandbox": false, "paymentSandbox": true, "paymentGateway": "mock" }
   }
 }
 ```
 
-Public settings intentionally exclude sensitive configuration, limits, pricing, discounts, and notification controls.
+`vtuSandbox` and `paymentSandbox` are independent. A mixed environment (`vtuSandbox: false`, `paymentSandbox: true`) means test wallet funding can still trigger real VTU purchases; the UI must say so explicitly. Public settings intentionally exclude sensitive configuration, limits, pricing, discounts, and notification controls.
 
 ---
 

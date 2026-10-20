@@ -31,17 +31,19 @@ import {
  * guessed or silently replaced with demo IDs.
  */
 
+// Numeric network IDs confirmed against the live SME API. 9mobile is
+// intentionally absent: its ID has not been confirmed, and guessing it could
+// route a real purchase to the wrong network. Add it only after provider
+// confirmation (and a live test) so the adapter fails closed by default.
 const NETWORK_IDS: Record<string, number> = {
   MTN: 1,
   GLO: 2,
-  '9MOBILE': 3,
   AIRTEL: 4,
 };
 
 const NETWORK_NAMES: Record<number, string> = {
   1: 'MTN',
   2: 'GLO',
-  3: '9MOBILE',
   4: 'AIRTEL',
 };
 
@@ -49,7 +51,6 @@ const NETWORKS: ProviderNetwork[] = [
   { code: 'MTN', name: 'MTN' },
   { code: 'AIRTEL', name: 'Airtel' },
   { code: 'GLO', name: 'Glo' },
-  { code: '9MOBILE', name: '9mobile' },
 ];
 
 const PATHS = {
@@ -125,18 +126,30 @@ function normaliseStatus(value: unknown): ProviderOutcome | null {
   return null;
 }
 
-export function normaliseSmeOutcome(body: unknown): ProviderOutcome {
+export function normaliseSmeOutcome(
+  body: unknown,
+  options: { allowGenericStatus?: boolean } = {}
+): ProviderOutcome {
   const root = asRecord(body);
   const data = asRecord(root.data);
-  const statuses = [
+  const transaction = asRecord(root.transaction);
+  const dataTransaction = asRecord(data.transaction);
+  const statuses: unknown[] = [
     firstDefined(root.transaction_status, root.transactionStatus),
     firstDefined(root.Status, root.status_code, root.transactionState),
+    firstDefined(transaction.status, transaction.Status, transaction.transaction_status),
     firstDefined(data.transaction_status, data.transactionStatus),
     firstDefined(data.Status, data.status_code),
-    firstDefined(root.status),
-    firstDefined(data.status),
+    firstDefined(dataTransaction.status, dataTransaction.Status, dataTransaction.transaction_status),
     firstDefined(root.outcome, data.outcome),
+    firstDefined(data.status),
   ];
+  // For a purchase call, the top-level `status` is usually the transaction
+  // result. For a status query it can merely mean "the lookup succeeded", so
+  // callers can exclude it and require an explicit transaction state.
+  if (options.allowGenericStatus !== false) {
+    statuses.push(firstDefined(root.status));
+  }
 
   const outcomes = new Set<ProviderOutcome>();
   for (const value of statuses) {
@@ -189,10 +202,16 @@ function extractToken(root: Record<string, unknown>, data: Record<string, unknow
   return match?.[1];
 }
 
-export function normaliseSmePurchase(body: unknown, fallbackReference?: string): ProviderPurchaseResult {
+export function normaliseSmePurchase(
+  body: unknown,
+  fallbackReference?: string,
+  options: { allowGenericStatus?: boolean } = {}
+): ProviderPurchaseResult {
   const root = asRecord(body);
   const data = asRecord(root.data);
-  const outcome = normaliseSmeOutcome(body);
+  const transaction = asRecord(root.transaction);
+  const dataTransaction = asRecord(data.transaction);
+  const outcome = normaliseSmeOutcome(body, options);
   const rawStatus = firstDefined(
     extractIdentifier(root.transaction_status),
     extractIdentifier(root.Status),
@@ -215,10 +234,14 @@ export function normaliseSmePurchase(body: unknown, fallbackReference?: string):
       extractIdentifier(root.transaction_ref),
       extractIdentifier(root.transactionRef),
       extractIdentifier(root.ReferenceID),
+      extractIdentifier(transaction.ref),
+      extractIdentifier(transaction.reference),
       extractIdentifier(data.ref),
       extractIdentifier(data.reference),
       extractIdentifier(data.transaction_ref),
       extractIdentifier(data.transactionRef),
+      extractIdentifier(dataTransaction.ref),
+      extractIdentifier(dataTransaction.reference),
       fallbackReference
     ),
     providerStatus: rawStatus ?? outcome,
@@ -330,6 +353,21 @@ function parseCatalogueFile(file: string): SmeCatalogueConfig {
         providerId: String(item.providerId),
       })),
   };
+}
+
+/**
+ * SME API expects a local 11-digit Nigerian phone number (for example
+ * `08031234567`), not the internal E.164 format (`+2348031234567`).
+ */
+export function toSmePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  let local = digits;
+  if (digits.startsWith('234') && digits.length === 13) local = digits.slice(3);
+  else if (digits.startsWith('0') && digits.length === 11) local = digits.slice(1);
+  if (!/^[789][01]\d{8}$/.test(local)) {
+    throw AppError.badRequest('Recipient phone must be a valid Nigerian phone number', 'INVALID_PHONE');
+  }
+  return `0${local}`;
 }
 
 export class SmeApiProvider implements VtuProvider {
@@ -570,6 +608,17 @@ export class SmeApiProvider implements VtuProvider {
             raw: sanitizeProviderPayload(responseBody),
           };
         }
+        // A 400/422 is a rejected request: the provider did not create a
+        // transaction, so refunding is safer than holding funds for review.
+        if (httpStatus === 400 || httpStatus === 422) {
+          return {
+            outcome: 'FAILED',
+            providerReference: reference,
+            providerStatus: `HTTP_${httpStatus}`,
+            message,
+            raw: sanitizeProviderPayload(responseBody),
+          };
+        }
         if (/invalid|not found|insufficient|declined|rejected|disabled|failed|could not/i.test(message)) {
           return {
             outcome: 'FAILED',
@@ -591,17 +640,11 @@ export class SmeApiProvider implements VtuProvider {
     }
   }
 
-  private basePurchasePayload(request: ProviderPurchaseRequest): { ref: string; phone?: string } {
-    return {
-      ref: request.reference,
-      phone: request.phone,
-    };
-  }
-
   async purchase(request: ProviderPurchaseRequest): Promise<ProviderPurchaseResult> {
     if (request.service === 'AIRTIME') {
       const network = this.networkId(request.network);
       if (!request.phone) throw AppError.badRequest('Recipient phone is required', 'INVALID_PHONE');
+      const phone = toSmePhone(request.phone);
       if (!request.amountMinor || request.amountMinor % 100 !== 0) {
         throw AppError.badRequest('Airtime amount must be a whole Naira value', 'INVALID_AMOUNT');
       }
@@ -610,7 +653,7 @@ export class SmeApiProvider implements VtuProvider {
         {
           network,
           amount: request.amountMinor / 100,
-          phone: request.phone,
+          phone,
           ported_number: 'false',
           ref: request.reference,
         },
@@ -621,6 +664,7 @@ export class SmeApiProvider implements VtuProvider {
     if (request.service === 'DATA') {
       const network = this.networkId(request.network);
       if (!request.phone) throw AppError.badRequest('Recipient phone is required', 'INVALID_PHONE');
+      const phone = toSmePhone(request.phone);
       const planId = request.planCode ?? request.packageCode;
       if (!planId || !/^\d+$/.test(String(planId))) {
         throw AppError.badRequest('A valid SME data plan ID is required', 'INVALID_PLAN');
@@ -630,7 +674,7 @@ export class SmeApiProvider implements VtuProvider {
         {
           network,
           data_plan: Number(planId),
-          phone: request.phone,
+          phone,
           ported_number: 'false',
           ref: request.reference,
         },
@@ -648,6 +692,7 @@ export class SmeApiProvider implements VtuProvider {
       if (!request.amountMinor || request.amountMinor < 100) {
         throw AppError.badRequest('Electricity amount is invalid', 'INVALID_AMOUNT');
       }
+      const phone = toSmePhone(request.phone ?? '');
       return this.executePurchase(
         PATHS.electricity,
         {
@@ -655,7 +700,7 @@ export class SmeApiProvider implements VtuProvider {
           metertype: request.meterType.toLowerCase(),
           meternumber: request.meterNumber,
           amount: request.amountMinor / 100,
-          phone: request.phone,
+          phone,
           ref: request.reference,
         },
         request.reference
@@ -673,13 +718,14 @@ export class SmeApiProvider implements VtuProvider {
       throw AppError.badRequest('This cable package is not configured', 'INVALID_PLAN');
     }
     if (!request.smartcardNumber) throw AppError.badRequest('Smartcard number is required', 'INVALID_SMARTCARD');
+    const phone = toSmePhone(request.phone ?? '');
 
     return this.executePurchase(
       PATHS.cable,
       {
         provider: provider.providerId,
         iucnumber: request.smartcardNumber,
-        phone: request.phone,
+        phone,
         plan: /^\d+$/.test(packageConfig.providerPlanId)
           ? Number(packageConfig.providerPlanId)
           : packageConfig.providerPlanId,
@@ -692,7 +738,9 @@ export class SmeApiProvider implements VtuProvider {
   async queryStatus(reference: string): Promise<ProviderStatusResult> {
     try {
       const body = await this.postJson(PATHS.status, { ref: reference });
-      return normaliseSmePurchase(body, reference);
+      // A successful lookup is not the same as a successful transaction. Only
+      // an explicit transaction state (or a decisive message) may resolve it.
+      return normaliseSmePurchase(body, reference, { allowGenericStatus: false });
     } catch (error) {
       const axiosError = error as AxiosError;
       const httpStatus = axiosError.response?.status;

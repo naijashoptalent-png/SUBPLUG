@@ -13,7 +13,7 @@ This runbook covers logical backups, managed point-in-time recovery, restore dri
 | MongoDB database | Users, wallets, ledger, transactions, fundings, tickets, settings, audit logs | Atlas continuous backup / `mongodump` / volume snapshot |
 | API secrets and environment | Required to run the restored system | Secret manager export under access control |
 | Client build artifacts | Reproducible rollback | CI artifact storage / release registry |
-| Provider configuration | Payment/VTU paths, webhook URLs, plan mappings | Encrypted configuration repository or runbook |
+| Provider configuration | Payment/VTU credentials, webhook URLs, `VTU_CATALOGUE_FILE` mappings | Encrypted configuration repository or runbook |
 | TLS certificates and DNS records | Service continuity | Certificate manager / infrastructure-as-code |
 | Audit exports | Investigation and compliance | Periodic encrypted export if retention exceeds database policy |
 
@@ -382,7 +382,7 @@ At least quarterly:
 
 1. Pick a random backup.
 2. Restore it to an isolated database/cluster.
-3. Start a staging API against it with sandbox providers.
+3. Start a staging API against it with mock/sandbox providers and a separate test wallet dataset. Never point the restored production database at live Paystack keys during a drill.
 4. Run the verification queries and application checks.
 5. Record the time taken, issues, and operator.
 6. Fix the runbook if anything was unclear.

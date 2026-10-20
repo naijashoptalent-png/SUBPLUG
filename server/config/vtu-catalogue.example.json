@@ -1,0 +1,6 @@
+{
+  "_note": "Copy to vtu-catalogue.json (ignored by git) and fill in ONLY the numeric IDs enabled on your SME API account. Do not guess these IDs. Airtime, data and transaction status work without this file. See docs/ENVIRONMENT.md for the field schema.",
+  "cableProviders": [],
+  "cablePackages": [],
+  "electricityProviders": []
+}

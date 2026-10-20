@@ -1,11 +1,36 @@
 import { FlaskConical } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { cn } from '@/lib/utils';
 
 export function SandboxNotice({ className }: { className?: string }) {
   const { settings } = usePublicSettings();
-  const isSandbox = settings.environment.paymentSandbox || settings.environment.vtuSandbox;
-  if (!isSandbox) return null;
+  const { paymentSandbox, vtuSandbox } = settings.environment;
+  if (!paymentSandbox && !vtuSandbox) return null;
+
+  let message: ReactNode;
+  if (paymentSandbox && vtuSandbox) {
+    message = (
+      <>
+        <span className="font-semibold">Sandbox environment.</span> No real money moves and no real airtime or
+        electricity is delivered. Use the mock payment controls to complete test transactions.
+      </>
+    );
+  } else if (vtuSandbox) {
+    message = (
+      <>
+        <span className="font-semibold">Sandbox VTU provider.</span> Purchases are simulated and no real airtime, data,
+        electricity or cable service is delivered.
+      </>
+    );
+  } else {
+    message = (
+      <>
+        <span className="font-semibold">Test wallet funding.</span> No real money moves when you top up in this
+        environment. Purchases made with existing wallet funds are sent to the live VTU provider.
+      </>
+    );
+  }
 
   return (
     <div
@@ -16,18 +41,16 @@ export function SandboxNotice({ className }: { className?: string }) {
       role="note"
     >
       <FlaskConical className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <p>
-        <span className="font-semibold">Sandbox environment.</span> No real money moves and no real airtime or
-        electricity is delivered. Use the mock payment controls to complete test transactions.
-      </p>
+      <p>{message}</p>
     </div>
   );
 }
 
 export function SandboxBadge({ className }: { className?: string }) {
   const { settings } = usePublicSettings();
-  const isSandbox = settings.environment.paymentSandbox || settings.environment.vtuSandbox;
-  if (!isSandbox) return null;
+  const { paymentSandbox, vtuSandbox } = settings.environment;
+  if (!paymentSandbox && !vtuSandbox) return null;
+  const label = paymentSandbox && vtuSandbox ? 'Sandbox' : vtuSandbox ? 'Test VTU' : 'Test funding';
   return (
     <span
       className={cn(
@@ -36,7 +59,7 @@ export function SandboxBadge({ className }: { className?: string }) {
       )}
     >
       <FlaskConical className="h-3 w-3" aria-hidden="true" />
-      Sandbox
+      {label}
     </span>
   );
 }

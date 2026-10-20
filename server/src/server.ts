@@ -15,7 +15,8 @@ async function bootstrap() {
   const app = createApp();
   const server = createServer(app);
 
-  // Local/demo convenience: seed the sandbox catalogue when the database is empty.
+  // Local convenience: sync the catalogue for the active VTU provider when it
+  // has no products yet. Never overwrites a synced or manually curated catalogue.
   if (env.NODE_ENV !== 'production') {
     try {
       const provider = getVtuProvider();
@@ -52,8 +53,8 @@ async function bootstrap() {
       } catch (error) {
         logger.warn({ err: error }, 'Payment provider not configured');
       }
-      if ((await ServicePlan.countDocuments()) === 0) {
-        logger.info('Empty catalogue detected; syncing sandbox catalogue');
+      if ((await ServicePlan.countDocuments({ provider: provider.key })) === 0) {
+        logger.info({ provider: provider.key }, 'No catalogue for active VTU provider; syncing');
         await syncCatalogue();
       }
     } catch (error) {

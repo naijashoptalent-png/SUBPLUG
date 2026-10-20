@@ -114,43 +114,68 @@ The access and refresh cookies are HTTP-only. The CSRF cookie is intentionally r
 | `PAYMENT_CURRENCY` | `NGN` | Must match the gateway and ledger currency |
 | `ALLOW_SANDBOX_IN_PRODUCTION` | `false` | Emergency override that permits mock payment/VTU providers in production. Leave false |
 
-In production with `PAYMENT_GATEWAY=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`. Never enable that override for a live service.
+In production with `PAYMENT_GATEWAY=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`. Never enable that override for a live service. Do not migrate a development database containing mock-funded wallets into production: those credits are real ledger entries and can be spent on live VTU purchases.
 
 ### VTU provider
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `VTU_PROVIDER` | `mock` | `mock` or `http` |
-| `ALLOW_MOCK_VTU` | `true` | Documents intent; mock providers are blocked in production by the provider guard unless the global sandbox override is set |
-| `VTU_API_BASE_URL` | empty | Licensed provider API origin |
-| `VTU_API_KEY` | empty | Provider API key |
-| `VTU_API_SECRET` | empty | Provider API secret |
+| `VTU_PROVIDER` | `mock` | `mock` or `sme` |
+| `ALLOW_MOCK_VTU` | `true` | Documents intent; mock providers are blocked in production unless the global sandbox override is set |
+| `VTU_API_BASE_URL` | empty | SME API origin, normally `https://smeapi.com.ng` |
+| `VTU_API_KEY` | empty | SME API key. Server-side only; send as `Authorization: Token <key>` |
 | `VTU_TIMEOUT_MS` | `15000` | Outbound request timeout |
-| `VTU_PATH_NETWORKS` | empty | Path for network list |
-| `VTU_PATH_DATA_PLANS` | empty | Path for data plans |
-| `VTU_PATH_ELECTRICITY_PROVIDERS` | empty | Path for discos |
-| `VTU_PATH_CABLE_PROVIDERS` | empty | Path for cable networks |
-| `VTU_PATH_VALIDATE_METER` | empty | Path for meter validation |
-| `VTU_PATH_VALIDATE_SMARTCARD` | empty | Path for smartcard validation |
-| `VTU_PATH_AIRTIME` | empty | Path for airtime purchase |
-| `VTU_PATH_DATA` | empty | Path for data purchase |
-| `VTU_PATH_ELECTRICITY` | empty | Path for electricity payment |
-| `VTU_PATH_CABLE` | empty | Path for cable payment |
-| `VTU_PATH_STATUS` | empty | Path for status query |
+| `VTU_CATALOGUE_FILE` | empty | Optional JSON file with cable/electricity numeric IDs enabled on the account |
+| `CATALOGUE_SYNC_INTERVAL_MS` | `900000` | Background catalogue refresh interval, minimum 60 seconds |
 
-The HTTP adapter is a **template**. Complete the request/response mapping in `server/src/providers/httpVtuProvider.ts` against your provider's contract, then test every service in sandbox before going live.
+The `sme` adapter uses these documented endpoints:
 
-In production with `VTU_PROVIDER=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`.
+| Operation | Endpoint |
+| --- | --- |
+| Account and provider balance | `GET /api/user/` |
+| Data plans | `GET /api/dataplans/` |
+| Airtime purchase | `POST /api/airtime/` |
+| Data purchase | `POST /api/data/` |
+| Cable validation | `POST /api/cabletv/verify/` |
+| Cable purchase | `POST /api/cabletv/` |
+| Electricity validation | `POST /api/electricity/verify/` |
+| Electricity purchase | `POST /api/electricity/` |
+| Transaction status | `POST /api/status/` |
+
+Airtime and data require only `VTU_API_BASE_URL` and `VTU_API_KEY`. The live adapter currently offers MTN, Glo, and Airtel; 9mobile is disabled until its numeric network ID is confirmed with the provider. Cable and electricity need the numeric provider/plan IDs from the SME API account; the adapter intentionally fails closed without them. Copy `server/config/vtu-catalogue.example.json` to a private file and populate confirmed IDs:
+
+```json
+{
+  "cableProviders": [{ "code": "DSTV", "name": "DStv", "providerId": "123" }],
+  "cablePackages": [
+    {
+      "providerPlanId": "456",
+      "network": "DSTV",
+      "name": "DStv Compact",
+      "validity": "1 month",
+      "costNaira": 19000
+    }
+  ],
+  "electricityProviders": [{ "code": "IKEDC", "name": "Ikeja Electric", "providerId": "789" }]
+}
+```
+
+Do not guess these values. Then set `VTU_CATALOGUE_FILE=server/config/vtu-catalogue.json` (relative to the server process working directory) and run `npm run seed`.
+
+In production with `VTU_PROVIDER=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`. With a live provider, `VTU_API_BASE_URL` and `VTU_API_KEY` are required.
 
 ### Redis and background workers
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `USE_QUEUES` | `false` | Use BullMQ/Redis for reconciliation |
+| `USE_QUEUES` | `false` | Use BullMQ/Redis for reconciliation and catalogue sync |
 | `REDIS_URL` | `redis://127.0.0.1:6379` | Redis connection string |
 | `RECONCILE_INTERVAL_MS` | `300000` | Reconciliation interval, minimum 30 seconds |
+| `CATALOGUE_SYNC_INTERVAL_MS` | `900000` | Live VTU catalogue refresh interval, minimum 60 seconds |
 
-Set `USE_QUEUES=true` when running more than one API instance. Without it, each API process starts its own in-process timers and reconciliation work may duplicate (the underlying operations remain idempotent, but duplicate provider queries and jobs are undesirable).
+Set `USE_QUEUES=true` when running more than one API instance. Without it, each API process starts its own in-process timers and reconciliation/catalogue-sync work may duplicate (the underlying operations remain idempotent, but duplicate provider queries and jobs are undesirable).
+
+The catalogue refresh keeps live data-plan prices and availability current. A failed or empty provider response is logged and leaves the last known-good catalogue in place.
 
 ### Email
 

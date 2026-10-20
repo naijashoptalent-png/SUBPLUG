@@ -75,7 +75,28 @@ Fix: use a replica set (Atlas, or initiate a single-node replica set). Do not se
 
 Symptom: `Mock payments are not allowed in production` or `Mock VTU provider is not allowed in production`.
 
-Fix: set `PAYMENT_GATEWAY=paystack` and `VTU_PROVIDER=http` with valid credentials. Do not set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a live service.
+Fix: set `PAYMENT_GATEWAY=paystack` and `VTU_PROVIDER=sme` with valid credentials. Do not set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a live service.
+
+### SME API says `VTU_NOT_CONFIGURED` or startup fails
+
+Set both `VTU_API_BASE_URL=https://smeapi.com.ng` and a valid `VTU_API_KEY` in `server/.env`, then restart the API. The key must stay server-side. Do not put it in a `VITE_*` variable.
+
+### SME catalogue sync fails
+
+- Check the provider health card in Admin → Providers.
+- Confirm `/api/user/` returns `status: "success"` and a numeric balance.
+- Confirm `/api/dataplans/` returns a non-empty `data` array. A failed or empty response leaves the previous catalogue unchanged.
+- Confirm MongoDB is reachable; a connection reset during bulk upsert can abort the sync.
+- Re-run `npm run seed` after fixing connectivity.
+- Remember that provider prices can change; the scheduled sync runs every `CATALOGUE_SYNC_INTERVAL_MS`.
+
+### Cable or electricity is disabled
+
+Expected until confirmed numeric provider/plan IDs are configured. Add them to `VTU_CATALOGUE_FILE` as described in [ENVIRONMENT.md](ENVIRONMENT.md#vtu-provider), restart the API, and run `npm run seed`. Do not guess IDs; a wrong ID can misdirect a real transaction.
+
+### A live SME purchase is stuck in `REQUIRES_REVIEW`
+
+Do not retry it. Check the provider dashboard and query status from the admin transaction page. If the provider has no record, treat it as a reconciliation incident; if it was delivered, resolve manually with an audited action.
 
 ### Port already in use
 
@@ -251,7 +272,7 @@ Usually an amount, currency, or reference mismatch between the local funding and
 
 ### `INSUFFICIENT_BALANCE`
 
-The wallet cannot cover `payableMinor`. Check the displayed quote and the wallet balance. Airtime discounts can make the payable amount lower than the face value, but never higher unless fees are configured.
+The wallet cannot cover `payableMinor`. Check the displayed quote and the wallet balance. In sandbox mode, airtime discounts can make the payable amount lower than the face value. A live SME quote has no discount because the provider deducts the full face value; fees can still add to the payable amount.
 
 ### `EMAIL_NOT_VERIFIED`
 
@@ -262,7 +283,7 @@ Verify the customer's email or adjust the `registration` setting only if policy 
 Expected for:
 
 - purchases at or above the manual-review threshold;
-- provider timeout/uncertain responses (phone ending `2222` in the sandbox);
+- provider timeout or ambiguous responses (including the mock phone suffix `2222`);
 - late provider success after refund;
 - stale pending transactions.
 
@@ -270,7 +291,7 @@ Administrators must review the provider dashboard and the transaction timeline. 
 
 ### `PENDING` forever
 
-- Phone ending `1111` in the sandbox produces a pending result.
+- The mock VTU adapter returns pending for phone numbers ending `1111`; a live provider may also leave a purchase pending.
 - In production, the provider may not have finalised. The scheduler queries status with backoff (up to eight attempts).
 - Check `nextReconcileAt`, `reconciliationAttempts`, and provider status.
 - Use admin `check-status` to force a query.

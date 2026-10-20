@@ -73,10 +73,20 @@ export function AdminProvidersPage() {
         }
       />
 
-      {data?.activeVtu.isSandbox || data?.payment.isSandbox ? (
+      {data?.activeVtu.isSandbox && data?.payment.isSandbox ? (
         <Alert variant="warning" title="Sandbox providers are active" className="mt-5">
-          Orders are simulated and no real airtime, data, electricity, or cable service is delivered. Sandbox funding does
-          not move real money. Switch provider credentials before accepting live customers.
+          Purchases and wallet funding are simulated. No real airtime, data, electricity, cable service or money is
+          delivered. Switch both providers to live credentials before accepting real customers.
+        </Alert>
+      ) : data?.activeVtu.isSandbox ? (
+        <Alert variant="warning" title="Sandbox VTU provider is active" className="mt-5">
+          Purchases are simulated and no real airtime, data, electricity or cable service is delivered. Wallet funding
+          follows the payment gateway configured below.
+        </Alert>
+      ) : data?.payment.isSandbox ? (
+        <Alert variant="warning" title="Sandbox wallet funding is active" className="mt-5">
+          Wallet top-ups are simulated and do not move real money. Purchases made from an existing wallet balance are
+          sent to the live VTU provider and can deliver real services.
         </Alert>
       ) : null}
 

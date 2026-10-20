@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { LedgerEntry, ServicePlan, Transaction, Wallet } from '../src/models';
 import { getVtuProvider, setVtuProviderForTests } from '../src/providers';
 import { MockVtuProvider } from '../src/providers/mockVtuProvider';
+import { effectiveAirtimeDiscountPercent } from '../src/services/catalogueService';
 import { purchaseAirtime, purchaseElectricity } from '../src/services/purchaseService';
 import { creditWallet } from '../src/services/walletService';
 import { createUser, uniqueReference } from './helpers';
@@ -34,6 +35,13 @@ function airtimeInput(phone: string, amountMinor = 10_000, idempotencyKey = uniq
 
 afterEach(() => {
   setVtuProviderForTests(null);
+});
+
+describe('airtime pricing', () => {
+  it('only applies configured discounts in sandbox mode', () => {
+    expect(effectiveAirtimeDiscountPercent(true, 2)).toBe(2);
+    expect(effectiveAirtimeDiscountPercent(false, 2)).toBe(0);
+  });
 });
 
 describe('airtime purchases', () => {

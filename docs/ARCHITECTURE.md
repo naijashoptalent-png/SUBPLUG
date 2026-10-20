@@ -264,8 +264,8 @@ Sandbox simulation uses the same `confirmFunding` path, so it exercises producti
 ## 8. Catalogue and pricing
 
 - `ServicePlan` stores provider plan IDs, network/package metadata, provider cost, selling price, and enabled state.
-- `seed.ts` pulls the sandbox catalogue from the active VTU adapter and applies the runtime pricing settings.
-- Data prices apply `pricing.dataMarkupPercent` over provider cost. Cable prices apply `pricing.cableMarkupPercent`. Airtime uses `discounts.airtimePercent` per network.
+- `seed.ts` pulls the catalogue from the active VTU adapter and applies the runtime pricing settings. A scheduled job refreshes it every `CATALOGUE_SYNC_INTERVAL_MS` because live provider prices can change.
+- Data prices apply `pricing.dataMarkupPercent` over provider cost. Cable prices apply `pricing.cableMarkupPercent`. Airtime uses `discounts.airtimePercent` per network in sandbox mode. The live SME provider deducts the full airtime face value, so live quotes force the discount to 0; otherwise the platform would fund the difference.
 - Electricity can apply `pricing.electricityFeeMinor`.
 - Administrators can enable/disable plans, rename them, and override selling prices. `preserveManualPlanPricing` protects manual overrides during catalogue synchronisation.
 - Purchase services re-read the plan and runtime limits at purchase time; the client's displayed price is never trusted.
@@ -298,8 +298,10 @@ interface VtuProvider {
 
 Two implementations exist:
 
+- `SmeApiProvider` — live SME API integration for airtime, data, validation, purchases, status, and health. It sends `Authorization: Token <VTU_API_KEY>`; the key remains server-side.
 - `MockVtuProvider` — deterministic sandbox, no network calls, clearly flagged.
-- `HttpVtuProvider` — a configurable template using `VTU_PATH_*` mappings. It must be completed and certified against a licensed provider's API before production use.
+
+Airtime and data use the live provider directly. Cable and electricity catalogue entries come from `VTU_CATALOGUE_FILE`, which contains confirmed numeric provider/plan IDs; the adapter fails closed rather than guessing. Provider plans are isolated by provider key, and stale plans from a previous provider are disabled during sync.
 
 Provider selection happens once and is cached. Mock adapters are blocked in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true` is explicitly set.
 
@@ -402,7 +404,7 @@ Roles:
 ## 14. Scaling and operational boundaries
 
 - The API is stateless and can run multiple instances behind a load balancer.
-- When running more than one instance, set `USE_QUEUES=true` and provide Redis so reconciliation is not duplicated.
+- When running more than one instance, set `USE_QUEUES=true` and provide Redis so reconciliation and catalogue sync are not duplicated.
 - MongoDB should be a replica set in production. Use a managed service with point-in-time backups.
 - Webhook endpoints must be publicly reachable over HTTPS and excluded from any WAF body rewriting that would break signature verification.
 - Long provider calls are bounded by `VTU_TIMEOUT_MS`; purchase submission is never automatically retried.

@@ -121,7 +121,7 @@ export function FundWalletDialog({
             <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-brand-700 dark:text-brand-300" aria-hidden="true" />
             <p className="text-xs leading-6 text-muted">
               Your wallet is credited only after the gateway result is verified. Returning to SubPlug does not credit
-              the balance by itself. If you are in sandbox mode, the next page lets you approve or fail the test payment.
+              the balance by itself. If wallet funding is in test mode, the next page lets you approve or fail the test payment.
             </p>
           </div>
         </div>

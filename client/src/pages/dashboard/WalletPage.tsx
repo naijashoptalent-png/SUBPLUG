@@ -18,6 +18,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
+import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { useFundings, useLedger, useWallet } from '@/hooks/useWallet';
 import { formatNaira, formatRelative, LEDGER_LABELS } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -70,6 +71,8 @@ export function WalletPage() {
           </Button>
         }
       />
+
+      <SandboxNotice className="mt-5" />
 
       {walletQuery.isError ? (
         <Card className="mt-6">

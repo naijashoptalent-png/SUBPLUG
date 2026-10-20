@@ -2,7 +2,7 @@
 
 This guide covers a production deployment of SubPlug on Linux with a managed MongoDB replica set, an optional managed Redis instance, a Node process manager, Nginx, and static hosting for the React build.
 
-> **Do not go live with sandbox providers.** Set `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=http`, and complete the provider integration and certification first. Never set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a real service.
+> **Do not go live with sandbox providers.** Set `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=sme`, and complete provider certification first. Never set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a real service. Until Paystack keys are configured, mock wallet funding must not be represented as real money.
 
 ---
 
@@ -132,16 +132,18 @@ PAYSTACK_BASE_URL=https://api.paystack.co
 ALLOW_MOCK_PAYMENTS=false
 PAYMENT_CURRENCY=NGN
 
-VTU_PROVIDER=http
+VTU_PROVIDER=sme
 ALLOW_MOCK_VTU=false
-VTU_API_BASE_URL=https://provider.example.com
+VTU_API_BASE_URL=https://smeapi.com.ng
 VTU_API_KEY=<key>
-VTU_API_SECRET=<secret>
 VTU_TIMEOUT_MS=15000
+# Cable/electricity only. Populate with confirmed numeric IDs, never guesses.
+VTU_CATALOGUE_FILE=server/config/vtu-catalogue.json
 
 USE_QUEUES=true
 REDIS_URL=rediss://default:PASSWORD@redis.example.com:6379
 RECONCILE_INTERVAL_MS=300000
+CATALOGUE_SYNC_INTERVAL_MS=900000
 
 EMAIL_FROM="SubPlug <no-reply@example.com>"
 EMAIL_HOST=smtp.example.com
@@ -159,7 +161,7 @@ AUTH_RATE_LIMIT_MAX=20
 TRANSACTION_EMAIL_ALERTS=true
 ```
 
-Complete every `VTU_PATH_*` variable required by your provider and implement the field mappings in `server/src/providers/httpVtuProvider.ts` before setting `VTU_PROVIDER=http`.
+Airtime and data work with the SME API base URL and key. Cable and electricity stay disabled until confirmed numeric provider/plan IDs are added to `VTU_CATALOGUE_FILE`. See [ENVIRONMENT.md](ENVIRONMENT.md#vtu-provider) for the file schema and every variable.
 
 See [ENVIRONMENT.md](ENVIRONMENT.md) for descriptions and validation rules.
 
@@ -369,12 +371,17 @@ Notes:
 
 ### VTU provider
 
-1. Implement `HttpVtuProvider` mappings for networks, plans, validation, purchase, and status.
-2. Populate every `VTU_PATH_*` value.
-3. Run catalogue sync and verify plans/prices.
-4. Test success, definitive failure, pending, and timeout behaviour in the provider sandbox.
-5. Confirm the provider's status-query semantics before enabling reconciliation intervals.
-6. Set `VTU_PROVIDER=http` only after certification.
+1. Set `VTU_PROVIDER=sme`, `VTU_API_BASE_URL=https://smeapi.com.ng`, and a server-side-only `VTU_API_KEY`.
+2. Confirm `/api/user/` through the admin provider health check and note the provider wallet balance.
+3. Run `npm run seed` and verify the live data-plan count, networks, costs, and customer prices.
+4. Confirm cable/electricity IDs in the SME API account, add them to `VTU_CATALOGUE_FILE`, and sync again. Never guess IDs.
+5. Make a low-value live airtime purchase to a controlled number with explicit approval, then verify:
+   - the provider reference and delivery;
+   - exactly one wallet debit and ledger entry;
+   - the local transaction becomes `SUCCESSFUL` only on a definitive provider result.
+6. Exercise a definitive failure, pending response, and timeout in a controlled way. Confirm uncertain outcomes become `REQUIRES_REVIEW` and are never auto-retried.
+7. Confirm the provider status endpoint semantics and keep reconciliation enabled.
+8. Review `CATALOGUE_SYNC_INTERVAL_MS`; live prices can change and stale costs are a commercial risk.
 
 ### Webhook exposure
 
@@ -417,7 +424,8 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 - [ ] `JWT_ACCESS_SECRET` is random, unique, and not the placeholder.
 - [ ] `NODE_ENV=production`, `AUTO_VERIFY_EMAILS=false`, `EXPOSE_DEV_EMAILS=false`.
 - [ ] `ALLOW_SANDBOX_IN_PRODUCTION` is unset or `false`.
-- [ ] `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=http`.
+- [ ] `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=sme`.
+- [ ] `VTU_API_KEY` is stored only in the server environment and has been rotated if exposed.
 - [ ] CORS contains only intended origins.
 - [ ] Cookies have correct domain, SameSite, and Secure attributes.
 - [ ] MongoDB/Redis are not publicly reachable.
@@ -429,8 +437,10 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 ### Financial
 
 - [ ] Replica set confirmed; `mongoTransactions: true`.
+- [ ] Production uses a clean database with no mock-funded wallets or sandbox ledger entries.
 - [ ] Seed completed; plans and prices reviewed.
 - [ ] Runtime limits, discounts, markups, referral reward, and manual-review threshold reviewed.
+- [ ] Live airtime quote confirmed at face value (`discountMinor: 0`); do not fund customer discounts from platform margin without an explicit pricing decision.
 - [ ] Test funding credits exactly once and appears in ledger.
 - [ ] Test airtime, data, electricity, and cable success paths.
 - [ ] Test definitive failure produces exactly one refund.

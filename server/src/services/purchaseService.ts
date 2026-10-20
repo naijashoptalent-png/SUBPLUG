@@ -337,6 +337,7 @@ export async function applyProviderOutcome(
         providerStatus,
         providerPayload: sanitizeProviderPayload(result.raw ?? result) as Record<string, unknown>,
         failureReason: null,
+        reviewReason: null,
         reconciledAt: new Date(),
         nextReconcileAt: null,
         'fulfillment.token': result.token ?? transaction.fulfillment?.token ?? null,
@@ -382,6 +383,7 @@ export async function applyProviderOutcome(
         providerStatus,
         providerPayload: sanitizeProviderPayload(result.raw ?? result) as Record<string, unknown>,
         failureReason: (result.message ?? 'Provider reported failure').slice(0, 500),
+        reviewReason: null,
         reconciledAt: new Date(),
         nextReconcileAt: null,
       },
@@ -484,9 +486,10 @@ export async function purchaseAirtime(
       payableMinor: quote.payableMinor,
       feeMinor: quote.feeMinor,
       discountMinor: quote.discountMinor,
-      // Provider cost is not exposed to us by the airtime quote; do not fabricate margin.
-      costMinor: quote.payableMinor,
-      marginMinor: 0,
+      // SME deducts the full face value for airtime. Record that observed cost
+      // rather than assuming a provider discount.
+      costMinor: quote.faceValueMinor,
+      marginMinor: quote.payableMinor - quote.faceValueMinor,
       providerRequest: {
         reference: '',
         service: 'AIRTIME',
@@ -570,9 +573,11 @@ export async function purchaseElectricity(
   const disco = input.disco.toUpperCase();
   const meterNumber = input.meterNumber.replace(/\s/g, '');
   if (!/^\d{10,13}$/.test(meterNumber)) throw AppError.badRequest('Meter number must be 10–13 digits', 'INVALID_METER');
+  const provider = getVtuProvider();
   const discoPlan = await ServicePlan.findOne({
     service: 'ELECTRICITY',
     providerPlanId: disco,
+    provider: provider.key,
     enabled: true,
     'metadata.kind': 'DISCO',
   }).lean();
@@ -585,8 +590,10 @@ export async function purchaseElectricity(
       'AMOUNT_OUT_OF_RANGE'
     );
   }
+  if (input.amountMinor % 100 !== 0) {
+    throw AppError.badRequest('Electricity amount must be a whole Naira amount', 'INVALID_AMOUNT');
+  }
 
-  const provider = getVtuProvider();
   const requestHash = hashRequestPayload({
     service: 'ELECTRICITY',
     disco,
@@ -602,6 +609,7 @@ export async function purchaseElectricity(
   if (!validation.valid) {
     throw AppError.badRequest(validation.message ?? 'Meter could not be validated', 'INVALID_METER');
   }
+  const user = await User.findById(actor.userId).select('phone').lean();
 
   const fee = pricing.electricityFeeMinor;
   return createPurchase(
@@ -621,6 +629,7 @@ export async function purchaseElectricity(
         meterNumber,
         meterType: input.meterType,
         disco,
+        phone: user?.phone ?? undefined,
       },
       recipient: {
         meterNumber,
@@ -659,6 +668,7 @@ export async function purchaseCable(
   const network = await ServicePlan.findOne({
     service: 'CABLE',
     providerPlanId: `__NETWORK__:${cableProvider}`,
+    provider: getVtuProvider().key,
     enabled: true,
   }).lean();
   if (!network) throw AppError.badRequest('Cable provider is not available', 'INVALID_CABLE_PROVIDER');
@@ -684,6 +694,7 @@ export async function purchaseCable(
   if (!validation.valid) {
     throw AppError.badRequest(validation.message ?? 'Smartcard could not be validated', 'INVALID_SMARTCARD');
   }
+  const user = await User.findById(actor.userId).select('phone').lean();
 
   const fee = pricing.cableFeeMinor;
   return createPurchase(
@@ -703,6 +714,7 @@ export async function purchaseCable(
         smartcardNumber,
         packageCode: plan.providerPlanId,
         planCode: plan.providerPlanId,
+        phone: user?.phone ?? undefined,
       },
       recipient: {
         smartcardNumber,
