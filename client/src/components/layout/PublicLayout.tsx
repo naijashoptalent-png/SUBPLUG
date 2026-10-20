@@ -51,9 +51,9 @@ export function PublicLayout() {
       ) : null}
 
       <header className="sticky top-0 z-40 border-b border-line/80 bg-surface/85 backdrop-blur-xl">
-        <div className="container-page flex h-16 items-center justify-between gap-4">
+        <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
           <Link to="/" aria-label="SubPlug home" className="rounded-xl">
-            <BrandMark name={settings.branding.name} />
+            <BrandMark name={settings.branding.name} className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
@@ -86,7 +86,8 @@ export function PublicLayout() {
                   Sign in
                 </Link>
                 <Link to="/register" className={buttonStyles('primary', 'sm')}>
-                  Create account
+                  <span className="sm:hidden">Join</span>
+                  <span className="hidden sm:inline">Create account</span>
                 </Link>
               </>
             )}

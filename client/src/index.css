@@ -38,11 +38,13 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {
     @apply bg-surface text-ink font-sans antialiased;
     min-height: 100%;
+    overflow-x: clip;
     text-rendering: optimizeLegibility;
   }
 
@@ -70,6 +72,15 @@
   textarea,
   button {
     font: inherit;
+  }
+
+  /* Prevent Safari from zooming into form controls on small screens. */
+  @media (max-width: 639px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
   }
 
   /* Remove number input spinners for cleaner money fields */
@@ -147,7 +158,9 @@
   }
 
   .table-wrap {
-    @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
+    @apply -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
   }
 
   .table-base {
@@ -164,6 +177,13 @@
   }
   .table-base tbody tr {
     @apply transition-colors hover:bg-surface/70;
+  }
+
+  @media (max-width: 639px) {
+    .table-base thead th,
+    .table-base tbody td {
+      @apply px-3;
+    }
   }
 
   .skeleton {
