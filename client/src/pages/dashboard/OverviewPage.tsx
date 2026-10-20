@@ -68,7 +68,7 @@ export function OverviewPage() {
         <SandboxNotice />
 
         <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-950 via-brand-800 to-brand-700 p-6 text-white shadow-glow sm:p-7">
+          <div className="balance-card relative overflow-hidden rounded-[1.75rem] p-6 text-white shadow-glow sm:p-7">
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full border border-white/10" aria-hidden="true" />
             <div className="absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-brand-400/10 blur-2xl" aria-hidden="true" />
             <div className="relative">
@@ -208,8 +208,8 @@ export function OverviewPage() {
                   <AreaChart data={summary.monthlyActivity} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                     <defs>
                       <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#14a696" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#14a696" stopOpacity={0.02} />
+                        <stop offset="0%" stopColor="#78ad1d" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#78ad1d" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--line))" vertical={false} />
@@ -242,7 +242,7 @@ export function OverviewPage() {
                     <Area
                       type="monotone"
                       dataKey="amountMinor"
-                      stroke="#14a696"
+                      stroke="#78ad1d"
                       strokeWidth={2.5}
                       fill="url(#spendGradient)"
                       dot={false}

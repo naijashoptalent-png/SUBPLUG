@@ -41,9 +41,10 @@ export function ServicesPage() {
         />
       </Helmet>
 
-      <section className="relative overflow-hidden border-b border-line">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 grid-lines opacity-60" aria-hidden="true" />
-        <div className="container-page py-14 sm:py-20">
+        <div className="container-page py-6 sm:py-10">
+          <div className="hero-panel max-w-none rounded-[2rem] border border-line/80 px-6 py-12 shadow-soft sm:px-10 sm:py-16">
           <div className="max-w-3xl">
             <span className="section-eyebrow">
               <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
@@ -63,6 +64,7 @@ export function ServicesPage() {
                 Read service FAQs
               </Link>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -143,7 +145,7 @@ export function ServicesPage() {
         )}
       </section>
 
-      <section className="border-y border-line bg-raised">
+      <section className="border-y border-line/80 bg-raised/70">
         <div className="container-page py-14 sm:py-20">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>

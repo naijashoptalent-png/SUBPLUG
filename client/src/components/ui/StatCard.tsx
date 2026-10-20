@@ -30,7 +30,7 @@ export function StatCard({
   }[tone];
 
   return (
-    <div className={cn('card p-5', className)}>
+    <div className={cn('card relative overflow-hidden p-5', className)}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
         <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl', toneClasses)}>

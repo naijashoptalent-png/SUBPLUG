@@ -14,11 +14,11 @@ export function AuthLayout() {
   const { settings } = usePublicSettings();
 
   return (
-    <div className="min-h-dvh bg-surface lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+    <div className="app-shell min-h-dvh bg-surface lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <aside className="relative hidden overflow-hidden bg-brand-950 px-12 py-10 text-white lg:flex lg:flex-col">
         <div className="absolute inset-0 opacity-60" aria-hidden="true">
-          <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl" />
-          <div className="absolute -right-16 bottom-0 h-96 w-96 rounded-full bg-brand-400/20 blur-3xl" />
+          <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-brand-500/35 blur-3xl" />
+          <div className="absolute -right-16 bottom-0 h-96 w-96 rounded-full bg-brand-300/25 blur-3xl" />
         </div>
         <div className="relative z-10 flex items-center justify-between">
           <Link to="/" aria-label="SubPlug home" className="text-white [&_span]:text-white">
@@ -79,7 +79,7 @@ export function AuthLayout() {
           </div>
         </header>
         <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-8">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-line/80 bg-raised/75 p-5 shadow-soft backdrop-blur-sm sm:p-7">
             <Outlet />
           </div>
         </main>

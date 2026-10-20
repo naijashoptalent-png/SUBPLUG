@@ -35,7 +35,7 @@ export function PublicLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface">
+    <div className="app-shell flex min-h-dvh flex-col bg-surface">
       <ScrollToTop />
       <a
         href="#main"
@@ -50,9 +50,9 @@ export function PublicLayout() {
         </div>
       ) : null}
 
-      <header className="sticky top-0 z-40 border-b border-line/80 bg-surface/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-line/70 bg-surface/80 backdrop-blur-xl">
         <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
-          <Link to="/" aria-label="SubPlug home" className="rounded-xl">
+          <Link to="/" aria-label="SubPlug home" className="rounded-xl transition hover:opacity-80">
             <BrandMark name={settings.branding.name} className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
           </Link>
 
@@ -63,8 +63,8 @@ export function PublicLayout() {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'rounded-lg px-3 py-2 text-sm font-medium transition',
-                    isActive ? 'bg-brand-500/10 text-brand-800 dark:text-brand-200' : 'text-muted hover:bg-surface hover:text-ink'
+                    'rounded-full px-3.5 py-2 text-sm font-medium transition',
+                    isActive ? 'bg-brand-500/15 text-brand-900 dark:text-brand-100' : 'text-muted hover:bg-raised hover:text-ink'
                   )
                 }
               >
@@ -135,7 +135,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-line bg-raised">
+      <footer className="border-t border-line/80 bg-raised/80">
         <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <BrandMark name={settings.branding.name} />
@@ -211,8 +211,8 @@ export function SimplePageShell({
   children: ReactNode;
 }) {
   return (
-    <div className="container-page py-14 sm:py-20">
-      <div className="mx-auto max-w-3xl">
+    <div className="container-page py-10 sm:py-16">
+      <div className="hero-panel mx-auto max-w-4xl rounded-[2rem] border border-line/80 px-6 py-10 shadow-soft sm:px-10 sm:py-14">
         {eyebrow ? <p className="section-eyebrow mb-4">{eyebrow}</p> : null}
         <h1 className="text-3xl font-semibold sm:text-4xl">{title}</h1>
         {description ? <p className="mt-3 text-base leading-7 text-muted">{description}</p> : null}

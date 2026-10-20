@@ -4,13 +4,13 @@
 
 :root {
   color-scheme: light;
-  --surface: 249 250 249;
+  --surface: 246 248 241;
   --raised: 255 255 255;
-  --ink: 24 32 31;
-  --muted: 85 99 97;
-  --subtle: 128 143 140;
-  --line: 224 232 230;
-  --success: 5 122 85;
+  --ink: 22 38 30;
+  --muted: 84 99 89;
+  --subtle: 133 145 136;
+  --line: 222 229 218;
+  --success: 35 139 87;
   --warning: 180 83 9;
   --danger: 190 32 50;
   --info: 29 78 216;
@@ -18,13 +18,13 @@
 
 .dark {
   color-scheme: dark;
-  --surface: 8 17 16;
-  --raised: 15 27 26;
-  --ink: 236 245 243;
-  --muted: 160 178 175;
-  --subtle: 119 139 136;
-  --line: 36 53 51;
-  --success: 52 211 153;
+  --surface: 13 24 19;
+  --raised: 20 34 27;
+  --ink: 241 247 237;
+  --muted: 174 190 177;
+  --subtle: 126 148 132;
+  --line: 44 61 50;
+  --success: 75 205 129;
   --warning: 251 191 36;
   --danger: 251 113 133;
   --info: 96 165 250;
@@ -46,6 +46,7 @@
     min-height: 100%;
     overflow-x: clip;
     text-rendering: optimizeLegibility;
+    background-image: radial-gradient(circle at 100% 0%, rgb(203 237 136 / 0.15), transparent 28rem);
   }
 
   ::selection {
@@ -111,7 +112,7 @@
   }
 
   .card {
-    @apply rounded-3xl border border-line bg-raised shadow-soft;
+    @apply rounded-[1.65rem] border border-line/90 bg-raised shadow-soft;
   }
 
   .card-hover {
@@ -127,7 +128,7 @@
   }
 
   .field {
-    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink placeholder:text-subtle transition focus:border-brand-500 focus:bg-raised focus:outline-none focus:ring-4 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply w-full rounded-xl border border-line bg-surface/70 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-subtle transition focus:border-brand-500 focus:bg-raised focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .field-error {
@@ -135,7 +136,7 @@
   }
 
   .section-eyebrow {
-    @apply inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-brand-700 dark:text-brand-300;
+    @apply inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-brand-800 dark:text-brand-200;
   }
 
   .prose-page {
@@ -218,7 +219,28 @@
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-brand-700 via-brand-500 to-brand-400 bg-clip-text text-transparent dark:from-brand-200 dark:via-brand-300 dark:to-brand-500;
+    @apply bg-gradient-to-r from-brand-900 via-brand-700 to-brand-500 bg-clip-text text-transparent dark:from-brand-100 dark:via-brand-300 dark:to-brand-500;
+  }
+
+  .app-shell {
+    background-image: radial-gradient(circle at 78% -10%, rgb(203 237 136 / 0.2), transparent 30rem);
+  }
+
+  .balance-card {
+    background-image: radial-gradient(circle at 90% 0%, rgb(203 237 136 / 0.28), transparent 38%), linear-gradient(135deg, #14270a 0%, #263d0d 58%, #486d12 100%);
+  }
+
+  .hero-panel {
+    background:
+      radial-gradient(circle at 88% 8%, rgb(203 237 136 / 0.28), transparent 19rem),
+      radial-gradient(circle at 2% 92%, rgb(120 173 29 / 0.16), transparent 22rem),
+      linear-gradient(135deg, rgb(255 255 255 / 0.94), rgb(246 250 232 / 0.82));
+  }
+
+  .dark .hero-panel {
+    background:
+      radial-gradient(circle at 88% 8%, rgb(203 237 136 / 0.12), transparent 19rem),
+      linear-gradient(135deg, rgb(20 39 28), rgb(24 45 25));
   }
 }
 

@@ -207,7 +207,7 @@ export function DashboardLayout() {
   }, [drawerOpen]);
 
   return (
-    <div className="min-h-dvh bg-surface">
+    <div className="app-shell min-h-dvh bg-surface">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-raised focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lift"
@@ -215,7 +215,7 @@ export function DashboardLayout() {
         Skip to content
       </a>
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-raised lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] border-r border-line/80 bg-raised/95 backdrop-blur lg:block">
         <SidebarContent />
       </aside>
 
@@ -241,7 +241,7 @@ export function DashboardLayout() {
         </div>
       ) : null}
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-[17rem]">
         <header className="sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur-xl">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
@@ -282,7 +282,7 @@ export function DashboardLayout() {
           </div>
         </header>
 
-        <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12">
+        <main id="main" className="mx-auto w-full max-w-[82rem] px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
           <Outlet />
         </main>
       </div>

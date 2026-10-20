@@ -82,7 +82,7 @@ export function WalletPage() {
       ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-950 via-brand-800 to-brand-600 p-6 text-white shadow-glow md:col-span-1">
+        <div className="balance-card relative overflow-hidden rounded-[1.75rem] p-6 text-white shadow-glow md:col-span-1">
           <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full border border-white/10" aria-hidden="true" />
           <div className="flex items-center gap-2 text-white/70">
             <WalletIcon className="h-4 w-4" aria-hidden="true" />

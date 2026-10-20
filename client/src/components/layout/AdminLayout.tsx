@@ -162,8 +162,8 @@ export function AdminLayout() {
   }, [drawerOpen]);
 
   return (
-    <div className="min-h-dvh bg-surface">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-raised lg:block">
+    <div className="app-shell min-h-dvh bg-surface">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] border-r border-line/80 bg-raised/95 backdrop-blur lg:block">
         <AdminSidebarContent />
       </aside>
 
@@ -189,7 +189,7 @@ export function AdminLayout() {
         </div>
       ) : null}
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-[17rem]">
         <header className="sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur-xl">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
@@ -232,7 +232,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main id="main" className="mx-auto w-full max-w-7xl px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+        <main id="main" className="mx-auto w-full max-w-[90rem] px-4 pb-12 pt-6 sm:px-6 lg:px-8 lg:pt-8">
           <Outlet />
         </main>
       </div>

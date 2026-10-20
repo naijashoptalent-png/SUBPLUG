@@ -139,7 +139,8 @@ export function HomePage() {
           <div className="absolute -right-24 top-24 h-96 w-96 rounded-full bg-brand-500/10 blur-3xl" />
         </div>
 
-        <div className="container-page grid items-center gap-14 pb-16 pt-12 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:pb-24 lg:pt-24">
+        <div className="container-page py-6 sm:py-10 lg:py-14">
+          <div className="hero-panel grid items-center gap-14 overflow-hidden rounded-[2rem] border border-line/80 px-6 py-10 shadow-lift sm:px-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:px-14 lg:py-16">
           <div className="animate-fade-up">
             <div className="flex flex-wrap items-center gap-2">
               <span className="section-eyebrow">
@@ -187,7 +188,7 @@ export function HomePage() {
           {/* Wallet visual */}
           <div className="relative mx-auto w-full max-w-md animate-fade-up lg:mx-0" style={{ animationDelay: '120ms' }}>
             <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-gradient-to-br from-brand-500/15 via-transparent to-brand-300/10 blur-2xl" aria-hidden="true" />
-            <div className="relative rotate-[-2deg] overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-950 via-brand-800 to-brand-700 p-6 text-white shadow-lift transition duration-500 hover:rotate-0">
+            <div className="balance-card relative rotate-[-2deg] overflow-hidden rounded-[2rem] p-6 text-white shadow-lift transition duration-500 hover:rotate-0">
               <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full border border-white/10" aria-hidden="true" />
               <div className="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-white/5" aria-hidden="true" />
 
@@ -253,9 +254,10 @@ export function HomePage() {
               </div>
             </div>
           </div>
+          </div>
         </div>
 
-        <div className="border-y border-line bg-raised/60">
+        <div className="mx-auto mt-4 max-w-[80rem] border-y border-line bg-raised/60 sm:mt-6">
           <div className="container-page flex flex-wrap items-center gap-x-8 gap-y-3 py-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-subtle">Networks supported</p>
             <div className="flex flex-wrap items-center gap-2">
