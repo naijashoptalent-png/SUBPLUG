@@ -1,0 +1,101 @@
+import { Request, Response } from 'express';
+import { asyncHandler } from '../utils/asyncHandler';
+import * as catalogueService from '../services/catalogueService';
+import { getPublicSettings, getSetting } from '../services/settingsService';
+import { getVtuProvider } from '../providers';
+import { getPaymentProvider } from '../providers/paymentIndex';
+import { AppError } from '../utils/AppError';
+import { sendContactMessage } from '../services/emailService';
+import { writeAudit } from '../services/auditService';
+
+export const listServices = asyncHandler(async (_req: Request, res: Response) => {
+  const services = await catalogueService.listServices();
+  const vtu = getVtuProvider();
+  res.json({ data: { services, provider: { key: vtu.key, name: vtu.name, isSandbox: vtu.isSandbox } } });
+});
+
+export const getNetworks = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: await catalogueService.getNetworks() });
+});
+
+export const getDataPlans = asyncHandler(async (req: Request, res: Response) => {
+  const network = typeof req.query.network === 'string' ? req.query.network : undefined;
+  res.json({ data: await catalogueService.listDataPlans(network) });
+});
+
+export const getElectricityProviders = asyncHandler(async (_req: Request, res: Response) => {
+  const pricing = await getSetting('pricing');
+  res.json({ data: { providers: await catalogueService.listElectricityProviders(), feeMinor: pricing.electricityFeeMinor } });
+});
+
+export const getCableProviders = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: await catalogueService.listCableProviders() });
+});
+
+export const getCablePackages = asyncHandler(async (req: Request, res: Response) => {
+  const network = String(req.query.network ?? '');
+  if (!network) throw AppError.badRequest('network query parameter is required');
+  res.json({ data: await catalogueService.listCablePackages(network) });
+});
+
+export const quoteAirtime = asyncHandler(async (req: Request, res: Response) => {
+  const network = String(req.query.network ?? '');
+  const amountMinor = Number(req.query.amountMinor ?? 0);
+  const quote = await catalogueService.quoteAirtime(network, amountMinor);
+  res.json({ data: quote });
+});
+
+export const validateMeter = asyncHandler(async (req: Request, res: Response) => {
+  const provider = getVtuProvider();
+  const result = await provider.validateMeter({
+    disco: req.body.disco,
+    meterNumber: req.body.meterNumber,
+    meterType: req.body.meterType,
+  });
+  res.json({ data: result });
+});
+
+export const validateSmartcard = asyncHandler(async (req: Request, res: Response) => {
+  const provider = getVtuProvider();
+  const result = await provider.validateSmartcard({
+    provider: req.body.cableProvider,
+    smartcardNumber: req.body.smartcardNumber,
+  });
+  res.json({ data: result });
+});
+
+export const publicSettings = asyncHandler(async (_req: Request, res: Response) => {
+  const settings = await getPublicSettings();
+  let payment = { key: 'unconfigured', isSandbox: false };
+  try {
+    const instance = getPaymentProvider();
+    payment = { key: instance.key, isSandbox: instance.isSandbox };
+  } catch {
+    payment = { key: 'unconfigured', isSandbox: false };
+  }
+  const vtu = getVtuProvider();
+  res.json({
+    data: {
+      ...settings,
+      environment: {
+        vtuSandbox: vtu.isSandbox,
+        paymentSandbox: payment.isSandbox,
+        paymentGateway: payment.key,
+      },
+    },
+  });
+});
+
+export const contact = asyncHandler(async (req: Request, res: Response) => {
+  await sendContactMessage(req.body);
+  await writeAudit({
+    action: 'PUBLIC_CONTACT_SUBMITTED',
+    entityType: 'Support',
+    metadata: { subject: req.body.subject },
+  });
+  res.json({
+    data: {
+      message: 'Thanks — your message was received. Support will respond using the email address you provided.',
+    },
+  });
+});
