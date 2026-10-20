@@ -2,6 +2,7 @@
   "name": "quicktopup-vtu",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "description": "QuickTopUp — a production-oriented MERN VTU platform for the Nigerian market",
   "workspaces": [
     "server",
