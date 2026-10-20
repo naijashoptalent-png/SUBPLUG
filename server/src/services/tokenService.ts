@@ -20,16 +20,16 @@ export function signAccessToken(userId: string, role: Role): string {
   const payload: AccessPayload = { sub: userId, role, purpose: 'access' };
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
     expiresIn: accessTtl,
-    issuer: 'quicktopup',
-    audience: 'quicktopup-api',
+    issuer: 'subplug',
+    audience: 'subplug-api',
   } as SignOptions);
 }
 
 export function verifyAccessToken(token: string): AccessPayload {
   try {
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET, {
-      issuer: 'quicktopup',
-      audience: 'quicktopup-api',
+      issuer: 'subplug',
+      audience: 'subplug-api',
     }) as AccessPayload;
     if (decoded.purpose !== 'access') throw new Error('wrong token purpose');
     return decoded;
@@ -41,16 +41,16 @@ export function verifyAccessToken(token: string): AccessPayload {
 export function signTwoFactorChallenge(userId: string): string {
   return jwt.sign({ sub: userId, purpose: '2fa' }, env.JWT_ACCESS_SECRET, {
     expiresIn: '5m',
-    issuer: 'quicktopup',
-    audience: 'quicktopup-api',
+    issuer: 'subplug',
+    audience: 'subplug-api',
   });
 }
 
 export function verifyTwoFactorChallenge(token: string): string {
   try {
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET, {
-      issuer: 'quicktopup',
-      audience: 'quicktopup-api',
+      issuer: 'subplug',
+      audience: 'subplug-api',
     }) as { sub: string; purpose: string };
     if (decoded.purpose !== '2fa') throw new Error('wrong token purpose');
     return decoded.sub;

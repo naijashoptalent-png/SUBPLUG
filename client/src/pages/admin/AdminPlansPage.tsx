@@ -121,7 +121,7 @@ export function AdminPlansPage() {
   return (
     <>
       <Helmet>
-        <title>Catalogue &amp; pricing — QuickTopUp operations</title>
+        <title>Catalogue &amp; pricing — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

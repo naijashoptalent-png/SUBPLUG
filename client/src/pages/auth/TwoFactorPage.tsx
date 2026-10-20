@@ -54,7 +54,7 @@ export function TwoFactorPage() {
   return (
     <div className="animate-fade-up">
       <Helmet>
-        <title>Two-factor verification — QuickTopUp</title>
+        <title>Two-factor verification — SubPlug</title>
       </Helmet>
 
       <div className="mb-8">
@@ -63,7 +63,7 @@ export function TwoFactorPage() {
         </span>
         <h1 className="mt-4 text-2xl font-semibold sm:text-3xl">Enter your authenticator code</h1>
         <p className="mt-1.5 text-sm text-muted">
-          Open your authenticator app and enter the current 6-digit code for QuickTopUp.
+          Open your authenticator app and enter the current 6-digit code for SubPlug.
         </p>
       </div>
 

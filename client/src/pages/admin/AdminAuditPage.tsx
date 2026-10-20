@@ -71,7 +71,7 @@ export function AdminAuditPage() {
   return (
     <>
       <Helmet>
-        <title>Audit logs — QuickTopUp operations</title>
+        <title>Audit logs — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

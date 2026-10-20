@@ -14,7 +14,7 @@ const router = Router();
 router.get('/', (_req, res) => {
   res.json({
     data: {
-      name: 'QuickTopUp API',
+      name: 'SubPlug API',
       version: '1.0.0',
       documentation: 'See docs/API.md in the project repository.',
     },

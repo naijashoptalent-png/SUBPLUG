@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers a production deployment of QuickTopUp on Linux with a managed MongoDB replica set, an optional managed Redis instance, a Node process manager, Nginx, and static hosting for the React build.
+This guide covers a production deployment of SubPlug on Linux with a managed MongoDB replica set, an optional managed Redis instance, a Node process manager, Nginx, and static hosting for the React build.
 
 > **Do not go live with sandbox providers.** Set `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=http`, and complete the provider integration and certification first. Never set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a real service.
 
@@ -34,7 +34,7 @@ This guide covers a production deployment of QuickTopUp on Linux with a managed 
                  └─────────────────────┘
 ```
 
-Same-origin deployment (SPA and API under one domain, e.g. `https://quicktopup.example` with `/api` proxied) is the simplest and avoids cross-site cookie configuration.
+Same-origin deployment (SPA and API under one domain, e.g. `https://subplug.example` with `/api` proxied) is the simplest and avoids cross-site cookie configuration.
 
 Supported alternatives:
 
@@ -111,7 +111,7 @@ PORT=4000
 API_BASE_URL=https://api.example.com
 CLIENT_URL=https://app.example.com
 ADDITIONAL_CORS_ORIGINS=
-MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster.example.mongodb.net/quicktopup?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster.example.mongodb.net/subplug?retryWrites=true&w=majority
 REQUIRE_REPLICA_SET=true
 JWT_ACCESS_SECRET=<96-random-hex-characters>
 ACCESS_TOKEN_TTL_MINUTES=15
@@ -143,7 +143,7 @@ USE_QUEUES=true
 REDIS_URL=rediss://default:PASSWORD@redis.example.com:6379
 RECONCILE_INTERVAL_MS=300000
 
-EMAIL_FROM="QuickTopUp <no-reply@example.com>"
+EMAIL_FROM="SubPlug <no-reply@example.com>"
 EMAIL_HOST=smtp.example.com
 EMAIL_PORT=587
 EMAIL_SECURE=false
@@ -219,21 +219,21 @@ NODE_ENV=production npm run seed
 
 ### systemd example
 
-`/etc/systemd/system/quicktopup-api.service`:
+`/etc/systemd/system/subplug-api.service`:
 
 ```ini
 [Unit]
-Description=QuickTopUp API
+Description=SubPlug API
 After=network.target
 
 [Service]
 Type=simple
-User=quicktopup
-Group=quicktopup
-WorkingDirectory=/srv/quicktopup
+User=subplug
+Group=subplug
+WorkingDirectory=/srv/subplug
 Environment=NODE_ENV=production
-EnvironmentFile=/etc/quicktopup/api.env
-ExecStart=/usr/bin/node /srv/quicktopup/server/dist/server.js
+EnvironmentFile=/etc/subplug/api.env
+ExecStart=/usr/bin/node /srv/subplug/server/dist/server.js
 Restart=always
 RestartSec=5
 TimeoutStopSec=20
@@ -242,7 +242,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/quicktopup
+ReadWritePaths=/srv/subplug
 LimitNOFILE=65535
 
 [Install]
@@ -251,22 +251,22 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now quicktopup-api
-sudo systemctl status quicktopup-api
-sudo journalctl -u quicktopup-api -f
+sudo systemctl enable --now subplug-api
+sudo systemctl status subplug-api
+sudo journalctl -u subplug-api -f
 ```
 
 Set restrictive permissions on the environment file:
 
 ```bash
-sudo chown root:quicktopup /etc/quicktopup/api.env
-sudo chmod 640 /etc/quicktopup/api.env
+sudo chown root:subplug /etc/subplug/api.env
+sudo chmod 640 /etc/subplug/api.env
 ```
 
 ### PM2 alternative
 
 ```bash
-pm2 start server/dist/server.js --name quicktopup-api --update-env
+pm2 start server/dist/server.js --name subplug-api --update-env
 pm2 save
 pm2 startup
 ```
@@ -280,7 +280,7 @@ Use **one** API process unless `USE_QUEUES=true` and Redis are configured. PM2 c
 Same-origin example (`https://app.example.com`):
 
 ```nginx
-upstream quicktopup_api {
+upstream subplug_api {
     server 127.0.0.1:4000;
     keepalive 32;
 }
@@ -299,7 +299,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    root /srv/quicktopup/client/dist;
+    root /srv/subplug/client/dist;
     index index.html;
 
     # Security headers for the SPA. Adjust CSP to the assets you actually use.
@@ -309,7 +309,7 @@ server {
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
     location /api/ {
-        proxy_pass http://quicktopup_api;
+        proxy_pass http://subplug_api;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -321,7 +321,7 @@ server {
     }
 
     location = /health {
-        proxy_pass http://quicktopup_api;
+        proxy_pass http://subplug_api;
         proxy_set_header Host $host;
         access_log off;
     }

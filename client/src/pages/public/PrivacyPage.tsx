@@ -5,24 +5,24 @@ export function PrivacyPage() {
   return (
     <>
       <Helmet>
-        <title>Privacy policy — QuickTopUp</title>
+        <title>Privacy policy — SubPlug</title>
         <meta
           name="description"
-          content="How QuickTopUp collects, uses, shares and protects personal data under Nigerian data protection law."
+          content="How SubPlug collects, uses, shares and protects personal data under Nigerian data protection law."
         />
       </Helmet>
       <SimplePageShell
         eyebrow="Legal"
         title="Privacy policy"
-        description="This policy explains what personal data QuickTopUp processes, why we process it, and the choices available to you."
+        description="This policy explains what personal data SubPlug processes, why we process it, and the choices available to you."
       >
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-subtle">Last updated: 20 October 2026</p>
 
         <div className="prose-page">
           <h2>1. Who we are</h2>
           <p>
-            QuickTopUp operates a wallet and VTU platform for airtime, mobile data, electricity and cable TV payments in
-            Nigeria. For the purposes of the Nigeria Data Protection Act 2023, QuickTopUp is the data controller for the
+            SubPlug operates a wallet and VTU platform for airtime, mobile data, electricity and cable TV payments in
+            Nigeria. For the purposes of the Nigeria Data Protection Act 2023, SubPlug is the data controller for the
             personal data described below, except where a payment or service provider processes data as an independent
             controller.
           </p>
@@ -33,7 +33,7 @@ export function PrivacyPage() {
             <li><strong>Identity and verification data:</strong> email and phone verification status, and two-factor authentication secrets stored in encrypted/secret form.</li>
             <li><strong>Transaction data:</strong> service type, recipient phone number, meter number, smartcard number, package or plan, amount, provider reference, status and fulfilment details such as electricity tokens.</li>
             <li><strong>Wallet data:</strong> funding references, ledger entries, balances, refunds and adjustments.</li>
-            <li><strong>Payment data:</strong> gateway reference and payment status. Card details are entered on the payment gateway’s page and are not stored by QuickTopUp.</li>
+            <li><strong>Payment data:</strong> gateway reference and payment status. Card details are entered on the payment gateway’s page and are not stored by SubPlug.</li>
             <li><strong>Support data:</strong> messages, ticket references and any attachments or information you choose to provide.</li>
             <li><strong>Technical data:</strong> IP address, user agent, session metadata, request identifiers and security logs.</li>
           </ul>
@@ -73,7 +73,7 @@ export function PrivacyPage() {
 
           <h2>6. Cookies and similar technologies</h2>
           <p>
-            QuickTopUp uses strictly necessary cookies for authentication, session rotation and CSRF protection. These
+            SubPlug uses strictly necessary cookies for authentication, session rotation and CSRF protection. These
             cookies are HTTP-only where appropriate and are not used for advertising. The theme preference is stored in
             your browser’s local storage. You can clear cookies and local storage through your browser, but doing so will
             sign you out and may reset preferences.

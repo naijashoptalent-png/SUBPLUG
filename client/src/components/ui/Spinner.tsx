@@ -10,7 +10,7 @@ export function Spinner({ className, label = 'Loading' }: { className?: string; 
   );
 }
 
-export function FullPageSpinner({ label = 'Loading QuickTopUp' }: { label?: string }) {
+export function FullPageSpinner({ label = 'Loading SubPlug' }: { label?: string }) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-surface" role="status">
       <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-brand-700 text-white shadow-glow dark:bg-brand-500 dark:text-brand-950">

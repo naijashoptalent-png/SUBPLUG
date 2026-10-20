@@ -84,7 +84,7 @@ export function BuyDataPage() {
   return (
     <>
       <Helmet>
-        <title>Buy data — QuickTopUp</title>
+        <title>Buy data — SubPlug</title>
       </Helmet>
 
       <PageHeader

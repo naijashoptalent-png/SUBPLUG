@@ -39,7 +39,7 @@ export function ForgotPasswordPage() {
   return (
     <div className="animate-fade-up">
       <Helmet>
-        <title>Reset your password — QuickTopUp</title>
+        <title>Reset your password — SubPlug</title>
       </Helmet>
 
       <div className="mb-8">

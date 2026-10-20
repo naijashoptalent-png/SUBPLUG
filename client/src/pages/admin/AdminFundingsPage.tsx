@@ -65,7 +65,7 @@ export function AdminFundingsPage() {
   return (
     <>
       <Helmet>
-        <title>Wallet fundings — QuickTopUp operations</title>
+        <title>Wallet fundings — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

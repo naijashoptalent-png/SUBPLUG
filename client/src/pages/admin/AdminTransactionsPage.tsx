@@ -66,7 +66,7 @@ export function AdminTransactionsPage() {
   return (
     <>
       <Helmet>
-        <title>Transactions — QuickTopUp operations</title>
+        <title>Transactions — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

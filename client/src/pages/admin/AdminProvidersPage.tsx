@@ -51,7 +51,7 @@ export function AdminProvidersPage() {
   return (
     <>
       <Helmet>
-        <title>Providers &amp; health — QuickTopUp operations</title>
+        <title>Providers &amp; health — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

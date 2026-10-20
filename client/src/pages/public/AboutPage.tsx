@@ -50,17 +50,17 @@ export function AboutPage() {
   return (
     <>
       <Helmet>
-        <title>About QuickTopUp — principles and platform scope</title>
+        <title>About SubPlug — principles and platform scope</title>
         <meta
           name="description"
-          content="QuickTopUp is a Nigerian VTU and bill-payment platform built around an auditable wallet ledger, verified payment outcomes and practical security."
+          content="SubPlug is a Nigerian VTU and bill-payment platform built around an auditable wallet ledger, verified payment outcomes and practical security."
         />
       </Helmet>
 
       <SimplePageShell
-        eyebrow="About QuickTopUp"
+        eyebrow="About SubPlug"
         title="Everyday payments deserve engineering discipline."
-        description="QuickTopUp brings airtime, data, electricity and cable TV into one wallet — and treats the record of every movement as a first-class product."
+        description="SubPlug brings airtime, data, electricity and cable TV into one wallet — and treats the record of every movement as a first-class product."
       >
         <div className="grid gap-4 sm:grid-cols-2">
           {principles.map((principle) => (
@@ -75,9 +75,9 @@ export function AboutPage() {
         </div>
 
         <section className="mt-14" aria-labelledby="scope-heading">
-          <h2 id="scope-heading" className="text-2xl font-semibold">What QuickTopUp is — and what it is not</h2>
+          <h2 id="scope-heading" className="text-2xl font-semibold">What SubPlug is — and what it is not</h2>
           <p className="mt-2 text-sm leading-7 text-muted">
-            Being explicit about scope is part of building trust. QuickTopUp is a technology platform that initiates VTU
+            Being explicit about scope is part of building trust. SubPlug is a technology platform that initiates VTU
             and bill payments through integrated service providers. It is not a bank.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">

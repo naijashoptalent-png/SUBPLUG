@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export function BrandMark({
   className,
   showName = true,
-  name = 'QuickTopUp',
+  name = 'SubPlug',
 }: {
   className?: string;
   showName?: boolean;

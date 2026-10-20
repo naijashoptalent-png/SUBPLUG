@@ -1,6 +1,6 @@
 # Environment and Configuration
 
-QuickTopUp reads API configuration from `server/.env` (or real process environment variables) and validates it with Zod at boot. Missing or malformed values stop the process with a message that names the invalid variable; secret values are not printed.
+SubPlug reads API configuration from `server/.env` (or real process environment variables) and validates it with Zod at boot. Missing or malformed values stop the process with a message that names the invalid variable; secret values are not printed.
 
 The web client reads `VITE_*` variables at **build time** from `client/.env` or the shell.
 
@@ -39,7 +39,7 @@ These have no safe production default and must be set deliberately.
 
 | Variable | Example | Notes |
 | --- | --- | --- |
-| `MONGODB_URI` | `mongodb://127.0.0.1:27017/quicktopup` | Use a replica set URI in production, e.g. Atlas `mongodb+srv://…` |
+| `MONGODB_URI` | `mongodb://127.0.0.1:27017/subplug` | Use a replica set URI in production, e.g. Atlas `mongodb+srv://…` |
 | `JWT_ACCESS_SECRET` | 96 hex characters | At least 32 characters. Generate randomly and keep secret |
 | `ADMIN_EMAIL` | `owner@example.com` | Used only by the seed script |
 | `ADMIN_PASSWORD` | strong unique password | At least 12 characters with upper, lower, digit, symbol |
@@ -156,7 +156,7 @@ Set `USE_QUEUES=true` when running more than one API instance. Without it, each 
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `EMAIL_FROM` | `QuickTopUp <no-reply@example.com>` | Sender header |
+| `EMAIL_FROM` | `SubPlug <no-reply@example.com>` | Sender header |
 | `EMAIL_HOST` | empty | SMTP host. When empty, email is skipped |
 | `EMAIL_PORT` | `587` | SMTP port |
 | `EMAIL_SECURE` | `false` | `true` for implicit TLS (usually port 465) |
@@ -187,7 +187,7 @@ Rate limits use the Express `trust proxy` configuration. If `TRUST_PROXY` is wro
 | Variable | Default | Description |
 | --- | --- | --- |
 | `VITE_API_URL` | empty | API origin, e.g. `https://api.example.com`. Empty means same-origin `/api` (development proxy) |
-| `VITE_APP_NAME` | `QuickTopUp` | Display name used by the client |
+| `VITE_APP_NAME` | `SubPlug` | Display name used by the client |
 | `VITE_API_PROXY_TARGET` | `http://localhost:4000` | Development-only proxy target for Vite (from `client/.env` or the shell) |
 
 `VITE_API_URL` is embedded in the built JavaScript. Changing it requires a rebuild. It is not a secret.
@@ -200,31 +200,31 @@ For a same-origin production deployment, put the SPA and API behind one domain a
 
 ### Standalone (development only)
 
-The default `MONGODB_URI=mongodb://127.0.0.1:27017/quicktopup` works with a local standalone server. The API logs a warning that transactions are unavailable and uses the in-process serialized fallback. This is acceptable for local development and tests, not production.
+The default `MONGODB_URI=mongodb://127.0.0.1:27017/subplug` works with a local standalone server. The API logs a warning that transactions are unavailable and uses the in-process serialized fallback. This is acceptable for local development and tests, not production.
 
 ### Single-node replica set with Docker
 
 ```bash
-docker run --name quicktopup-mongo \
+docker run --name subplug-mongo \
   -p 27017:27017 \
   -d mongo:7 \
   --replSet rs0 \
   --bind_ip_all
 
-docker exec -it quicktopup-mongo mongosh --eval \
+docker exec -it subplug-mongo mongosh --eval \
   "rs.initiate({_id:'rs0',members:[{_id:0,host:'127.0.0.1:27017'}]})"
 ```
 
 Use:
 
 ```dotenv
-MONGODB_URI=mongodb://127.0.0.1:27017/quicktopup?replicaSet=rs0
+MONGODB_URI=mongodb://127.0.0.1:27017/subplug?replicaSet=rs0
 ```
 
 Verify:
 
 ```bash
-docker exec -it quicktopup-mongo mongosh --eval "rs.status().ok"
+docker exec -it subplug-mongo mongosh --eval "rs.status().ok"
 ```
 
 ### Native MongoDB

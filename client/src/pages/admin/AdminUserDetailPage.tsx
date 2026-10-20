@@ -136,7 +136,7 @@ export function AdminUserDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{data.user.fullName} — QuickTopUp operations</title>
+        <title>{data.user.fullName} — SubPlug operations</title>
       </Helmet>
 
       <div className="mb-4">

@@ -21,7 +21,7 @@ export function AuthLayout() {
           <div className="absolute -right-16 bottom-0 h-96 w-96 rounded-full bg-brand-400/20 blur-3xl" />
         </div>
         <div className="relative z-10 flex items-center justify-between">
-          <Link to="/" aria-label="QuickTopUp home" className="text-white [&_span]:text-white">
+          <Link to="/" aria-label="SubPlug home" className="text-white [&_span]:text-white">
             <BrandMark name={settings.branding.name} />
           </Link>
           <span className="rounded-full border border-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">

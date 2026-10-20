@@ -5,25 +5,25 @@ export function TermsPage() {
   return (
     <>
       <Helmet>
-        <title>Terms of service — QuickTopUp</title>
-        <meta name="description" content="The terms that govern use of the QuickTopUp wallet and VTU services." />
+        <title>Terms of service — SubPlug</title>
+        <meta name="description" content="The terms that govern use of the SubPlug wallet and VTU services." />
       </Helmet>
       <SimplePageShell
         eyebrow="Legal"
         title="Terms of service"
-        description="These terms govern your use of QuickTopUp. By creating an account or using the platform, you agree to them."
+        description="These terms govern your use of SubPlug. By creating an account or using the platform, you agree to them."
       >
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-subtle">Last updated: 20 October 2026</p>
 
         <div className="prose-page">
           <h2>1. About these terms</h2>
           <p>
-            QuickTopUp (“QuickTopUp”, “we”, “us”) provides a wallet and technology platform for purchasing airtime,
+            SubPlug (“SubPlug”, “we”, “us”) provides a wallet and technology platform for purchasing airtime,
             mobile data, electricity and cable television services in Nigeria. These terms form an agreement between you
-            and QuickTopUp. If you do not agree, do not use the platform.
+            and SubPlug. If you do not agree, do not use the platform.
           </p>
           <p>
-            QuickTopUp is not a bank and does not provide deposit, credit, investment or insurance products. Wallet
+            SubPlug is not a bank and does not provide deposit, credit, investment or insurance products. Wallet
             balances are operational balances used to purchase services through the platform and are not interest-bearing
             deposits.
           </p>
@@ -42,7 +42,7 @@ export function TermsPage() {
           <h2>3. Account security</h2>
           <ul>
             <li>You are responsible for keeping your password, email account and authenticator device secure.</li>
-            <li>Do not share passwords or one-time codes. QuickTopUp staff will never ask for your password or OTP.</li>
+            <li>Do not share passwords or one-time codes. SubPlug staff will never ask for your password or OTP.</li>
             <li>You must tell support promptly if you believe your account has been accessed without authorisation.</li>
             <li>We may rate-limit, lock or require additional verification where we detect suspicious activity.</li>
           </ul>
@@ -92,7 +92,7 @@ export function TermsPage() {
           </p>
 
           <h2>9. Acceptable use</h2>
-          <p>You must not use QuickTopUp to:</p>
+          <p>You must not use SubPlug to:</p>
           <ul>
             <li>commit fraud, launder money, finance unlawful activity or evade sanctions;</li>
             <li>impersonate another person or use a phone number, meter or smartcard without authorisation;</li>
@@ -107,7 +107,7 @@ export function TermsPage() {
 
           <h2>10. Intellectual property</h2>
           <p>
-            The platform, brand, interface and underlying software are owned by or licensed to QuickTopUp. You receive a
+            The platform, brand, interface and underlying software are owned by or licensed to SubPlug. You receive a
             limited, revocable, non-exclusive licence to use the platform for its intended purpose. You may not copy,
             modify or distribute the platform except as permitted by law or with written permission.
           </p>

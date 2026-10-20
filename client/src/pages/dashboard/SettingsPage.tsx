@@ -140,7 +140,7 @@ export function SettingsPage() {
   return (
     <>
       <Helmet>
-        <title>Settings — QuickTopUp</title>
+        <title>Settings — SubPlug</title>
       </Helmet>
 
       <PageHeader

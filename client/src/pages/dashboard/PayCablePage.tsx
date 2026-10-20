@@ -109,7 +109,7 @@ export function PayCablePage() {
   return (
     <>
       <Helmet>
-        <title>Pay cable TV — QuickTopUp</title>
+        <title>Pay cable TV — SubPlug</title>
       </Helmet>
 
       <PageHeader

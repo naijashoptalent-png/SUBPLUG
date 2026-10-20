@@ -169,7 +169,7 @@ export async function registerUser(input: RegisterInput, req: Request) {
   await notify({
     userId: String(user._id),
     type: 'SYSTEM',
-    title: 'Welcome to QuickTopUp',
+    title: 'Welcome to SubPlug',
     body: autoVerify
       ? 'Your account is ready. Fund your wallet to make your first purchase.'
       : 'Verify your email address to start making purchases.',
@@ -433,7 +433,7 @@ export async function setupTwoFactor(userId: string) {
   const secret = authenticator.generateSecret();
   user.twoFactorSecret = secret;
   await user.save();
-  const otpauthUrl = authenticator.keyuri(user.email, 'QuickTopUp', secret);
+  const otpauthUrl = authenticator.keyuri(user.email, 'SubPlug', secret);
   const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
   return { secret, otpauthUrl, qrCodeDataUrl };
 }

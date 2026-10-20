@@ -112,7 +112,7 @@ export function AdminTransactionDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{transaction.reference} — QuickTopUp operations</title>
+        <title>{transaction.reference} — SubPlug operations</title>
       </Helmet>
 
       <div className="mb-4">

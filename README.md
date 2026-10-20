@@ -1,6 +1,6 @@
-# QuickTopUp
+# SubPlug
 
-QuickTopUp is a production-oriented MERN (MongoDB, Express, React, Node.js) platform for selling airtime, data bundles, electricity tokens, and cable TV subscriptions in Nigeria. It includes a customer wallet, an append-only financial ledger, verified payment webhooks, provider adapters, a support desk, referrals, a staff/admin portal, and automated tests.
+SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platform for selling airtime, data bundles, electricity tokens, and cable TV subscriptions in Nigeria. It includes a customer wallet, an append-only financial ledger, verified payment webhooks, provider adapters, a support desk, referrals, a staff/admin portal, and automated tests.
 
 > **This repository ships with sandbox adapters only.** The default VTU and payment providers are deterministic mocks. They do not deliver real airtime, data, electricity, or cable services and do not move real money. Before accepting customers you must connect a licensed VTU provider and a live payment gateway, complete the production checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), and obtain the necessary regulatory and commercial approvals.
 
@@ -212,7 +212,7 @@ Run these from the repository root:
 
 The mock VTU adapter chooses an outcome from the recipient phone number:
 
-| Phone ending | Outcome | Result in QuickTopUp |
+| Phone ending | Outcome | Result in SubPlug |
 | --- | --- | --- |
 | `0000` | Definitive failure | Transaction becomes `FAILED`, then `REFUNDED` automatically |
 | `1111` | Pending | Transaction becomes `PENDING`; reconciliation may resolve it later |
@@ -236,7 +236,7 @@ The UI marks sandbox funding and sandbox purchases. Mock providers are rejected 
 
 ## Testing
 
-The server suite uses a dedicated MongoDB database, `quicktopup_test`, and runs files serially to avoid cross-file interference. MongoDB must be running locally, or `MONGODB_URI` in the test environment must point to a disposable test database.
+The server suite uses a dedicated MongoDB database, `subplug_test`, and runs files serially to avoid cross-file interference. MongoDB must be running locally, or `MONGODB_URI` in the test environment must point to a disposable test database.
 
 ```bash
 npm test

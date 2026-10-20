@@ -19,9 +19,9 @@ async function execute(jobName: string) {
 async function startBullMq() {
   const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
   redis = connection;
-  queue = new Queue('quicktopup-maintenance', { connection });
+  queue = new Queue('subplug-maintenance', { connection });
   worker = new Worker(
-    'quicktopup-maintenance',
+    'subplug-maintenance',
     async (job) => execute(job.name),
     { connection, concurrency: 1 }
   );

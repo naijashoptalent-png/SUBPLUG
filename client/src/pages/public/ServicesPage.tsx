@@ -34,10 +34,10 @@ export function ServicesPage() {
   return (
     <>
       <Helmet>
-        <title>Services & live prices — QuickTopUp</title>
+        <title>Services & live prices — SubPlug</title>
         <meta
           name="description"
-          content="Explore QuickTopUp services: airtime, mobile data bundles, electricity payments and cable TV renewals with live catalogue prices."
+          content="Explore SubPlug services: airtime, mobile data bundles, electricity payments and cable TV renewals with live catalogue prices."
         />
       </Helmet>
 

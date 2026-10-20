@@ -99,7 +99,7 @@ export function TransactionDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{transaction.reference} — QuickTopUp</title>
+        <title>{transaction.reference} — SubPlug</title>
       </Helmet>
 
       <div className="mb-4">

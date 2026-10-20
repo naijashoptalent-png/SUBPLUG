@@ -10,7 +10,7 @@ export default defineConfig({
     hookTimeout: 30_000,
     env: {
       NODE_ENV: 'test',
-      MONGODB_URI: 'mongodb://127.0.0.1:27017/quicktopup_test',
+      MONGODB_URI: 'mongodb://127.0.0.1:27017/subplug_test',
       REQUIRE_REPLICA_SET: 'false',
       JWT_ACCESS_SECRET: 'test-only-access-secret-with-at-least-32-characters',
       ACCESS_TOKEN_TTL_MINUTES: '15',
@@ -20,7 +20,7 @@ export default defineConfig({
       TRUST_PROXY: 'false',
       PAYMENT_GATEWAY: 'mock',
       ALLOW_MOCK_PAYMENTS: 'true',
-      PAYSTACK_SECRET_KEY: 'sk_test_quicktopup_test_secret',
+      PAYSTACK_SECRET_KEY: 'sk_test_subplug_test_secret',
       VTU_PROVIDER: 'mock',
       ALLOW_MOCK_VTU: 'true',
       AUTO_VERIFY_EMAILS: 'true',

@@ -66,7 +66,7 @@ export const SETTING_KEYS = {
 
 export const DEFAULT_SETTINGS = {
   branding: {
-    name: 'QuickTopUp',
+    name: 'SubPlug',
     tagline: 'Top up life, simply.',
     primaryColor: '#0f766e',
     supportEmail: 'support@example.com',

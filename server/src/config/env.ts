@@ -58,7 +58,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
   RECONCILE_INTERVAL_MS: int(300000, 30000),
 
-  EMAIL_FROM: z.string().default('QuickTopUp <no-reply@example.com>'),
+  EMAIL_FROM: z.string().default('SubPlug <no-reply@example.com>'),
   EMAIL_HOST: z.string().optional().default(''),
   EMAIL_PORT: int(587, 1),
   EMAIL_SECURE: bool(false),

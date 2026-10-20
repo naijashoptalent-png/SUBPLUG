@@ -48,10 +48,10 @@ export function ContactPage() {
   return (
     <>
       <Helmet>
-        <title>Contact support — QuickTopUp</title>
+        <title>Contact support — SubPlug</title>
         <meta
           name="description"
-          content="Contact QuickTopUp support about wallet funding, a failed purchase, meter validation or your account."
+          content="Contact SubPlug support about wallet funding, a failed purchase, meter validation or your account."
         />
       </Helmet>
 

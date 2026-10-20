@@ -26,7 +26,7 @@ export function ReferralsPage() {
   return (
     <>
       <Helmet>
-        <title>Referrals — QuickTopUp</title>
+        <title>Referrals — SubPlug</title>
       </Helmet>
 
       <PageHeader

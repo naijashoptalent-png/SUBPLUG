@@ -62,8 +62,8 @@ export function LoginPage() {
   return (
     <div className="animate-fade-up">
       <Helmet>
-        <title>Sign in — QuickTopUp</title>
-        <meta name="description" content="Sign in to your QuickTopUp wallet to buy airtime, data, electricity and cable TV." />
+        <title>Sign in — SubPlug</title>
+        <meta name="description" content="Sign in to your SubPlug wallet to buy airtime, data, electricity and cable TV." />
       </Helmet>
 
       <div className="mb-8">
@@ -115,7 +115,7 @@ export function LoginPage() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">
-        New to QuickTopUp?{' '}
+        New to SubPlug?{' '}
         <Link to="/register" className="font-semibold text-brand-700 hover:underline dark:text-brand-300">
           Create an account
         </Link>

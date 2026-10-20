@@ -38,12 +38,12 @@ export function FundingCallbackPage() {
   return (
     <div className="min-h-dvh bg-surface">
       <Helmet>
-        <title>Payment result — QuickTopUp</title>
+        <title>Payment result — SubPlug</title>
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
       <header className="border-b border-line bg-raised">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
-          <Link to="/dashboard" aria-label="QuickTopUp dashboard">
+          <Link to="/dashboard" aria-label="SubPlug dashboard">
             <BrandMark />
           </Link>
           <ThemeToggle />

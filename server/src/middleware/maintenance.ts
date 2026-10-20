@@ -23,7 +23,7 @@ export async function maintenanceGuard(req: Request, _res: Response, next: NextF
       throw new AppError(
         503,
         'MAINTENANCE_MODE',
-        'QuickTopUp is temporarily offline for maintenance. Please try again shortly.'
+        'SubPlug is temporarily offline for maintenance. Please try again shortly.'
       );
     }
     next();

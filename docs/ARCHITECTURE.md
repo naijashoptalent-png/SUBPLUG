@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes how QuickTopUp is structured, how money moves through the system, and which guarantees the code does and does not provide.
+This document describes how SubPlug is structured, how money moves through the system, and which guarantees the code does and does not provide.
 
 ---
 

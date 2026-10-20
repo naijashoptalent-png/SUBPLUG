@@ -109,7 +109,7 @@ export function PayElectricityPage() {
   return (
     <>
       <Helmet>
-        <title>Pay electricity — QuickTopUp</title>
+        <title>Pay electricity — SubPlug</title>
       </Helmet>
 
       <PageHeader

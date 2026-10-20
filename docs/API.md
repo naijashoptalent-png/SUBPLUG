@@ -279,7 +279,7 @@ The client must receive `valid: true` before enabling the electricity payment bu
 {
   "data": {
     "branding": {
-      "name": "QuickTopUp",
+      "name": "SubPlug",
       "tagline": "Top up life, simply.",
       "primaryColor": "#0f766e",
       "supportEmail": "support@example.com",

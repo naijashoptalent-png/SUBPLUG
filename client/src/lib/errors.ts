@@ -37,7 +37,7 @@ export function toApiError(error: unknown): ApiError {
       return new ApiError(
         0,
         'NETWORK_ERROR',
-        'We could not reach QuickTopUp. Check your connection and try again.'
+        'We could not reach SubPlug. Check your connection and try again.'
       );
     }
     const data = error.response.data as

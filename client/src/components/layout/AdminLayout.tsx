@@ -93,7 +93,7 @@ function AdminSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center gap-2 px-5">
-        <Link to="/admin" onClick={onNavigate} aria-label="QuickTopUp operations">
+        <Link to="/admin" onClick={onNavigate} aria-label="SubPlug operations">
           <BrandMark />
         </Link>
       </div>
@@ -208,7 +208,7 @@ export function AdminLayout() {
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">{title}</p>
-                <p className="hidden text-[11px] text-muted sm:block">QuickTopUp operations</p>
+                <p className="hidden text-[11px] text-muted sm:block">SubPlug operations</p>
               </div>
             </div>
 

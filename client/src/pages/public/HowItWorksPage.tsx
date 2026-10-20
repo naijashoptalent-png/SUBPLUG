@@ -30,7 +30,7 @@ const journey = [
   {
     icon: Banknote,
     title: 'Fund the wallet',
-    body: 'Start a funding request for the amount you need. You are redirected to the configured payment gateway, then returned to QuickTopUp.',
+    body: 'Start a funding request for the amount you need. You are redirected to the configured payment gateway, then returned to SubPlug.',
     detail: 'The return redirect is not proof of payment. Your wallet is credited only after a verified webhook or a server-side verification of the reference, amount and currency.',
   },
   {
@@ -78,17 +78,17 @@ export function HowItWorksPage() {
   return (
     <>
       <Helmet>
-        <title>How QuickTopUp works — wallet, purchases and refunds</title>
+        <title>How SubPlug works — wallet, purchases and refunds</title>
         <meta
           name="description"
-          content="Understand the QuickTopUp flow: account security, wallet funding, provider submission, confirmed outcomes and refund rules."
+          content="Understand the SubPlug flow: account security, wallet funding, provider submission, confirmed outcomes and refund rules."
         />
       </Helmet>
 
       <SimplePageShell
         eyebrow="How it works"
         title="A short flow with serious controls behind it."
-        description="QuickTopUp is built around a simple rule: money moves only when the platform can verify what happened. Here is the full journey."
+        description="SubPlug is built around a simple rule: money moves only when the platform can verify what happened. Here is the full journey."
       >
         <div className="space-y-4">
           {journey.map((step, index) => (

@@ -66,7 +66,7 @@ export function RegisterPage() {
           email: values.email,
           message: result.verificationRequired
             ? 'Account created. Check your email to verify your address, then sign in.'
-            : 'Account created. Sign in to fund your wallet and start using QuickTopUp.',
+            : 'Account created. Sign in to fund your wallet and start using SubPlug.',
         },
       });
     } catch (err) {
@@ -77,8 +77,8 @@ export function RegisterPage() {
   return (
     <div className="animate-fade-up">
       <Helmet>
-        <title>Create your account — QuickTopUp</title>
-        <meta name="description" content="Create a QuickTopUp account to fund your wallet and pay for airtime, data, electricity and cable TV." />
+        <title>Create your account — SubPlug</title>
+        <meta name="description" content="Create a SubPlug account to fund your wallet and pay for airtime, data, electricity and cable TV." />
       </Helmet>
 
       <div className="mb-7">

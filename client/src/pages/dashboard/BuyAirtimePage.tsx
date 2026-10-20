@@ -79,7 +79,7 @@ export function BuyAirtimePage() {
   return (
     <>
       <Helmet>
-        <title>Buy airtime — QuickTopUp</title>
+        <title>Buy airtime — SubPlug</title>
       </Helmet>
 
       <PageHeader

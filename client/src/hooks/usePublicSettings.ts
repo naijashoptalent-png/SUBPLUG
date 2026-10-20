@@ -5,7 +5,7 @@ import type { PublicSettings } from '@/types';
 
 export const FALLBACK_SETTINGS: PublicSettings = {
   branding: {
-    name: 'QuickTopUp',
+    name: 'SubPlug',
     tagline: 'Top up life, simply.',
     primaryColor: '#0f766e',
     supportEmail: 'support@example.com',

@@ -55,7 +55,7 @@ export function VerifyEmailPage() {
   return (
     <div className="animate-fade-up">
       <Helmet>
-        <title>Verify your email — QuickTopUp</title>
+        <title>Verify your email — SubPlug</title>
       </Helmet>
 
       {state === 'loading' ? (

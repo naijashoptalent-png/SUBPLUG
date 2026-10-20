@@ -48,7 +48,7 @@ Get-NetTCPConnection -LocalPort 27017 -State Listen
 Verify the URI with `mongosh`:
 
 ```bash
-mongosh "mongodb://127.0.0.1:27017/quicktopup" --eval "db.runCommand({ ping: 1 })"
+mongosh "mongodb://127.0.0.1:27017/subplug" --eval "db.runCommand({ ping: 1 })"
 ```
 
 For Atlas:
@@ -325,7 +325,7 @@ Fix:
 
 1. Start MongoDB locally.
 2. Confirm `mongodb://127.0.0.1:27017` is reachable.
-3. Ensure the test user can create/drop the `quicktopup_test` database.
+3. Ensure the test user can create/drop the `subplug_test` database.
 4. Run only the server suite: `npm run test -w server`.
 
 Tests deliberately use a separate database and run files serially. Do not point tests at production.
@@ -393,10 +393,10 @@ curl -s http://localhost:4000/health | jq
 curl -s http://localhost:4000/health/ready | jq
 
 # recent API logs (systemd)
-journalctl -u quicktopup-api -n 200 --no-pager
+journalctl -u subplug-api -n 200 --no-pager
 
 # recent API logs (PM2)
-pm2 logs quicktopup-api --lines 200
+pm2 logs subplug-api --lines 200
 
 # MongoDB replica set status
 mongosh "$MONGODB_URI" --eval "rs.status()"

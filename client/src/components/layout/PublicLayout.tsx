@@ -52,7 +52,7 @@ export function PublicLayout() {
 
       <header className="sticky top-0 z-40 border-b border-line/80 bg-surface/85 backdrop-blur-xl">
         <div className="container-page flex h-16 items-center justify-between gap-4">
-          <Link to="/" aria-label="QuickTopUp home" className="rounded-xl">
+          <Link to="/" aria-label="SubPlug home" className="rounded-xl">
             <BrandMark name={settings.branding.name} />
           </Link>
 
@@ -157,7 +157,7 @@ export function PublicLayout() {
           <div>
             <h2 className="text-sm font-semibold text-ink">Company</h2>
             <ul className="mt-3 space-y-2 text-sm text-muted">
-              <li><Link className="hover:text-ink" to="/about">About QuickTopUp</Link></li>
+              <li><Link className="hover:text-ink" to="/about">About SubPlug</Link></li>
               <li><Link className="hover:text-ink" to="/how-it-works">How it works</Link></li>
               <li><Link className="hover:text-ink" to="/faq">Help centre</Link></li>
               <li><Link className="hover:text-ink" to="/contact">Contact support</Link></li>

@@ -73,7 +73,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center px-5">
-        <Link to="/dashboard" onClick={onNavigate} aria-label="QuickTopUp dashboard">
+        <Link to="/dashboard" onClick={onNavigate} aria-label="SubPlug dashboard">
           <BrandMark />
         </Link>
       </div>
@@ -255,7 +255,7 @@ export function DashboardLayout() {
 
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-ink">{title}</p>
-              <p className="hidden text-[11px] text-muted sm:block">QuickTopUp account</p>
+              <p className="hidden text-[11px] text-muted sm:block">SubPlug account</p>
             </div>
 
             <div className="ml-auto flex items-center gap-2">

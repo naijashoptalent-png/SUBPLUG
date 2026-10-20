@@ -47,7 +47,7 @@ async function sendMail(input: MailInput): Promise<void> {
 
 function layout(title: string, body: string): string {
   return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0f172a">
-    <div style="font-weight:800;font-size:20px;color:#0f766e;margin-bottom:24px">QuickTopUp</div>
+    <div style="font-weight:800;font-size:20px;color:#0f766e;margin-bottom:24px">SubPlug</div>
     <h1 style="font-size:20px">${title}</h1>
     ${body}
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/>
@@ -58,7 +58,7 @@ function layout(title: string, body: string): string {
 export async function sendVerificationEmail(to: string, fullName: string, verificationUrl: string) {
   await sendMail({
     to,
-    subject: 'Verify your QuickTopUp email',
+    subject: 'Verify your SubPlug email',
     text: `Hi ${fullName}, verify your email: ${verificationUrl} (expires in 24 hours).`,
     html: layout('Verify your email', `<p>Hi ${fullName},</p><p>Confirm your email address to activate purchases.</p>
       <p><a href="${verificationUrl}" style="background:#0f766e;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;display:inline-block">Verify email</a></p>
@@ -69,7 +69,7 @@ export async function sendVerificationEmail(to: string, fullName: string, verifi
 export async function sendPasswordResetEmail(to: string, fullName: string, resetUrl: string) {
   await sendMail({
     to,
-    subject: 'Reset your QuickTopUp password',
+    subject: 'Reset your SubPlug password',
     text: `Hi ${fullName}, reset your password: ${resetUrl} (expires in 1 hour). If this wasn't you, ignore this email.`,
     html: layout('Reset your password', `<p>Hi ${fullName},</p><p>Use the button below to choose a new password. The link expires in one hour.</p>
       <p><a href="${resetUrl}" style="background:#0f766e;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;display:inline-block">Reset password</a></p>`),
@@ -97,7 +97,7 @@ export async function sendPurchaseStatus(to: string, reference: string, status: 
 export async function sendSecurityAlert(to: string, message: string) {
   await sendMail({
     to,
-    subject: 'Security alert for your QuickTopUp account',
+    subject: 'Security alert for your SubPlug account',
     text: message,
     html: layout('Security alert', `<p>${message}</p><p>If this was not you, reset your password immediately and contact support.</p>`),
   });

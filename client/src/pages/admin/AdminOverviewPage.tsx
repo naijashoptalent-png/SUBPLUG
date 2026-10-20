@@ -49,7 +49,7 @@ export function AdminOverviewPage() {
   return (
     <>
       <Helmet>
-        <title>Operations overview — QuickTopUp</title>
+        <title>Operations overview — SubPlug</title>
       </Helmet>
 
       <PageHeader

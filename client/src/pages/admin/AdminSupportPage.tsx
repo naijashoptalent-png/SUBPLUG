@@ -52,7 +52,7 @@ export function AdminSupportPage() {
   return (
     <>
       <Helmet>
-        <title>Support — QuickTopUp operations</title>
+        <title>Support — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

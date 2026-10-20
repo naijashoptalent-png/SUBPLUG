@@ -90,7 +90,7 @@ const steps = [
 const faqPreview = [
   {
     q: 'When is my wallet credited after a payment?',
-    a: 'Only after the payment gateway result is verified — through a signed webhook or a server-side verification call. A redirect back to QuickTopUp alone is never treated as proof of payment.',
+    a: 'Only after the payment gateway result is verified — through a signed webhook or a server-side verification call. A redirect back to SubPlug alone is never treated as proof of payment.',
   },
   {
     q: 'What happens if a provider fails to deliver?',
@@ -124,7 +124,7 @@ export function HomePage() {
   return (
     <>
       <Helmet>
-        <title>QuickTopUp — Airtime, data, electricity & cable in one wallet</title>
+        <title>SubPlug — Airtime, data, electricity & cable in one wallet</title>
         <meta
           name="description"
           content="Fund one secure wallet and pay for airtime, mobile data, electricity and cable TV in Nigeria. Provider-confirmed results and an auditable ledger."
@@ -194,7 +194,7 @@ export function HomePage() {
               <div className="relative flex items-start justify-between">
                 <BrandMark showName={false} className="[&>span]:bg-white/10" />
                 <div className="text-right">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">QuickTopUp wallet</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">SubPlug wallet</p>
                   <p className="mt-1 text-[11px] text-white/70">NGN · Nigeria</p>
                 </div>
               </div>

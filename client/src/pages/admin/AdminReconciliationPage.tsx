@@ -54,7 +54,7 @@ export function AdminReconciliationPage() {
   return (
     <>
       <Helmet>
-        <title>Reconciliation — QuickTopUp operations</title>
+        <title>Reconciliation — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

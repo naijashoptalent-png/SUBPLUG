@@ -247,7 +247,7 @@ export function AdminSettingsPage() {
   return (
     <>
       <Helmet>
-        <title>System settings — QuickTopUp operations</title>
+        <title>System settings — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

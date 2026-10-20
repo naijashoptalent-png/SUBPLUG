@@ -55,7 +55,7 @@ export function OverviewPage() {
   return (
     <>
       <Helmet>
-        <title>Dashboard — QuickTopUp</title>
+        <title>Dashboard — SubPlug</title>
       </Helmet>
 
       <div className="flex flex-col gap-5">

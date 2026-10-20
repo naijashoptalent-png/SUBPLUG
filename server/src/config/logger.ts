@@ -27,7 +27,7 @@ export const logger = pino({
     ],
     censor: '[REDACTED]',
   },
-  base: { service: 'quicktopup-api', env: env.NODE_ENV },
+  base: { service: 'subplug-api', env: env.NODE_ENV },
   transport: !isProduction && !isTest
     ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' } }
     : undefined,

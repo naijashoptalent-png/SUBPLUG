@@ -95,7 +95,7 @@ export function AdminSupportTicketPage() {
   return (
     <>
       <Helmet>
-        <title>{ticket.reference} — QuickTopUp support</title>
+        <title>{ticket.reference} — SubPlug support</title>
       </Helmet>
 
       <div className="mb-4">

@@ -41,7 +41,7 @@ export function AdminUsersPage() {
   return (
     <>
       <Helmet>
-        <title>Users — QuickTopUp operations</title>
+        <title>Users — SubPlug operations</title>
       </Helmet>
 
       <PageHeader

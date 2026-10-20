@@ -37,7 +37,7 @@ export function MockPaymentPage() {
   return (
     <div className="min-h-dvh bg-surface">
       <Helmet>
-        <title>Sandbox checkout — QuickTopUp</title>
+        <title>Sandbox checkout — SubPlug</title>
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
       <header className="border-b border-line bg-raised">

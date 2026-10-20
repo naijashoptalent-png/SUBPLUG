@@ -31,7 +31,7 @@ export function ResetPasswordPage() {
     return (
       <div className="animate-fade-up">
         <Helmet>
-          <title>Invalid reset link — QuickTopUp</title>
+          <title>Invalid reset link — SubPlug</title>
         </Helmet>
         <Alert variant="danger" title="This reset link is incomplete">
           Request a new password reset email to continue.
@@ -61,7 +61,7 @@ export function ResetPasswordPage() {
   return (
     <div className="animate-fade-up">
       <Helmet>
-        <title>Choose a new password — QuickTopUp</title>
+        <title>Choose a new password — SubPlug</title>
       </Helmet>
 
       <div className="mb-8">

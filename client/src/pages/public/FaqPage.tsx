@@ -10,11 +10,11 @@ const groups = [
     title: 'Getting started',
     items: [
       {
-        q: 'What do I need to open a QuickTopUp account?',
+        q: 'What do I need to open a SubPlug account?',
         a: 'Your full name, a valid email address and a Nigerian mobile number. Choose a password with at least 10 characters including uppercase, lowercase, a number and a symbol. You may need to verify your email before making purchases.',
       },
       {
-        q: 'Can I use QuickTopUp on my phone?',
+        q: 'Can I use SubPlug on my phone?',
         a: 'Yes. The interface is built mobile-first. You can add it to your home screen from your mobile browser for quicker access.',
       },
       {
@@ -28,7 +28,7 @@ const groups = [
     items: [
       {
         q: 'How is my wallet funded?',
-        a: 'You start a funding request, pay through the configured payment gateway, and are returned to QuickTopUp. The wallet is credited only after a verified payment result — a signed webhook or a server-side verification of the reference, amount and currency.',
+        a: 'You start a funding request, pay through the configured payment gateway, and are returned to SubPlug. The wallet is credited only after a verified payment result — a signed webhook or a server-side verification of the reference, amount and currency.',
       },
       {
         q: 'Why has my payment not reflected yet?',
@@ -77,8 +77,8 @@ const groups = [
         a: 'Access uses HTTP-only cookies, CSRF protection on mutating requests, rate-limited sign-in and hashed refresh tokens with rotation. Repeated failed sign-ins can lock the account temporarily. You can enable authenticator-based two-factor authentication from settings.',
       },
       {
-        q: 'Does QuickTopUp store my card details?',
-        a: 'Card data is entered on the payment gateway’s page, not on QuickTopUp. The platform stores the gateway reference and payment status needed to reconcile the funding.',
+        q: 'Does SubPlug store my card details?',
+        a: 'Card data is entered on the payment gateway’s page, not on SubPlug. The platform stores the gateway reference and payment status needed to reconcile the funding.',
       },
       {
         q: 'What should I do if I suspect unauthorised access?',
@@ -112,10 +112,10 @@ export function FaqPage() {
   return (
     <>
       <Helmet>
-        <title>Help centre & FAQs — QuickTopUp</title>
+        <title>Help centre & FAQs — SubPlug</title>
         <meta
           name="description"
-          content="Answers about QuickTopUp wallet funding, provider-confirmed purchases, refunds, security and referrals."
+          content="Answers about SubPlug wallet funding, provider-confirmed purchases, refunds, security and referrals."
         />
         <script type="application/ld+json">
           {JSON.stringify({

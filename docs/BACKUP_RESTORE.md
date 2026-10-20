@@ -73,25 +73,25 @@ Atlas restore is performed from the cluster's Backup tab or API. Never restore o
 
 ```bash
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-mkdir -p /backups/quicktopup
+mkdir -p /backups/subplug
 
 mongodump \
   --uri="$MONGODB_URI" \
   --oplog \
   --gzip \
-  --archive="/backups/quicktopup/quicktopup-$STAMP.archive.gz"
+  --archive="/backups/subplug/subplug-$STAMP.archive.gz"
 
-sha256sum "/backups/quicktopup/quicktopup-$STAMP.archive.gz" \
-  > "/backups/quicktopup/quicktopup-$STAMP.archive.gz.sha256"
+sha256sum "/backups/subplug/subplug-$STAMP.archive.gz" \
+  > "/backups/subplug/subplug-$STAMP.archive.gz.sha256"
 ```
 
 ### Standalone development database
 
 ```bash
 mongodump \
-  --uri="mongodb://127.0.0.1:27017/quicktopup" \
+  --uri="mongodb://127.0.0.1:27017/subplug" \
   --gzip \
-  --archive="/backups/quicktopup-dev-$(date +%Y%m%d).archive.gz"
+  --archive="/backups/subplug-dev-$(date +%Y%m%d).archive.gz"
 ```
 
 A standalone dump is not transactionally consistent across collections. Use it only for development or as a best-effort secondary copy.
@@ -100,24 +100,24 @@ A standalone dump is not transactionally consistent across collections. Use it o
 
 ```powershell
 $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
-New-Item -ItemType Directory -Force C:\backups\quicktopup | Out-Null
+New-Item -ItemType Directory -Force C:\backups\subplug | Out-Null
 
 mongodump --uri="$env:MONGODB_URI" --oplog --gzip `
-  --archive="C:\backups\quicktopup\quicktopup-$stamp.archive.gz"
+  --archive="C:\backups\subplug\subplug-$stamp.archive.gz"
 
-Get-FileHash "C:\backups\quicktopup\quicktopup-$stamp.archive.gz" -Algorithm SHA256 |
+Get-FileHash "C:\backups\subplug\subplug-$stamp.archive.gz" -Algorithm SHA256 |
   Format-List
 ```
 
 ### Upload off-site
 
 ```bash
-aws s3 cp "/backups/quicktopup/quicktopup-$STAMP.archive.gz" \
-  "s3://company-backups/quicktopup/$STAMP/" \
+aws s3 cp "/backups/subplug/subplug-$STAMP.archive.gz" \
+  "s3://company-backups/subplug/$STAMP/" \
   --sse aws:kms
 
-aws s3 cp "/backups/quicktopup/quicktopup-$STAMP.archive.gz.sha256" \
-  "s3://company-backups/quicktopup/$STAMP/" \
+aws s3 cp "/backups/subplug/subplug-$STAMP.archive.gz.sha256" \
+  "s3://company-backups/subplug/$STAMP/" \
   --sse aws:kms
 ```
 
@@ -162,11 +162,11 @@ restore test status
 
 ```bash
 mongorestore \
-  --uri="mongodb://staging-host:27017/quicktopup_restore?replicaSet=rs0" \
+  --uri="mongodb://staging-host:27017/subplug_restore?replicaSet=rs0" \
   --gzip \
-  --archive="/backups/quicktopup/quicktopup-20261020T120000Z.archive.gz" \
-  --nsFrom="quicktopup.*" \
-  --nsTo="quicktopup_restore.*" \
+  --archive="/backups/subplug/subplug-20261020T120000Z.archive.gz" \
+  --nsFrom="subplug.*" \
+  --nsTo="subplug_restore.*" \
   --oplogReplay
 ```
 
@@ -195,7 +195,7 @@ Example:
 mongorestore \
   --uri="$MONGODB_URI" \
   --gzip \
-  --archive="/backups/quicktopup/quicktopup-20261020T120000Z.archive.gz" \
+  --archive="/backups/subplug/subplug-20261020T120000Z.archive.gz" \
   --drop \
   --oplogReplay
 ```
@@ -219,7 +219,7 @@ Run these checks before serving customers.
 ### Counts and status distribution
 
 ```javascript
-use quicktopup
+use subplug
 
 db.users.countDocuments()
 db.wallets.countDocuments()

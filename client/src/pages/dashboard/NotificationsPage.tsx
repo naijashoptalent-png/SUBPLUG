@@ -59,7 +59,7 @@ export function NotificationsPage() {
   return (
     <>
       <Helmet>
-        <title>Notifications — QuickTopUp</title>
+        <title>Notifications — SubPlug</title>
       </Helmet>
 
       <PageHeader

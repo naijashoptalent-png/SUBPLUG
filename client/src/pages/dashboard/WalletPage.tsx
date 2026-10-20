@@ -57,7 +57,7 @@ export function WalletPage() {
   return (
     <>
       <Helmet>
-        <title>Wallet — QuickTopUp</title>
+        <title>Wallet — SubPlug</title>
       </Helmet>
 
       <PageHeader

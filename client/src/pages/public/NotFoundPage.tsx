@@ -7,7 +7,7 @@ export function NotFoundPage() {
   return (
     <>
       <Helmet>
-        <title>Page not found — QuickTopUp</title>
+        <title>Page not found — SubPlug</title>
       </Helmet>
       <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
         <div className="max-w-lg text-center">

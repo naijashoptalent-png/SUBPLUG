@@ -82,7 +82,7 @@ export function SupportPage() {
   return (
     <>
       <Helmet>
-        <title>Support — QuickTopUp</title>
+        <title>Support — SubPlug</title>
       </Helmet>
 
       <PageHeader

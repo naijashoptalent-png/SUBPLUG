@@ -73,7 +73,7 @@ async function bootstrap() {
         paymentGateway: env.PAYMENT_GATEWAY,
         mongoTransactions: supportsTransactions(),
       },
-      `QuickTopUp API listening on http://localhost:${env.PORT}`
+      `SubPlug API listening on http://localhost:${env.PORT}`
     );
   });
 
