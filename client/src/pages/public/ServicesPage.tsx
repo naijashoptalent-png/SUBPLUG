@@ -130,13 +130,17 @@ export function ServicesPage() {
                       {service.key === 'CABLE' && service.providers ? `${service.providers.length} cable networks` : null}
                       {service.key === 'AIRTIME' ? 'Discount applied at checkout' : null}
                     </p>
-                    <Link
-                      to={isAuthenticated ? `/dashboard/${service.key.toLowerCase()}` : `/register?next=${service.key.toLowerCase()}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
-                    >
-                      {isAuthenticated ? 'Buy now' : 'Get started'}
-                      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Link>
+                    {service.enabled ? (
+                      <Link
+                        to={isAuthenticated ? `/dashboard/${service.key.toLowerCase()}` : `/register?next=${service.key.toLowerCase()}`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
+                      >
+                        {isAuthenticated ? 'Buy now' : 'Get started'}
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Link>
+                    ) : (
+                      <span className="text-xs font-semibold text-subtle">Temporarily unavailable</span>
+                    )}
                   </div>
                 </Card>
               );
@@ -252,7 +256,7 @@ export function ServicesPage() {
             </span>
             <div>
               <h2 className="text-lg font-semibold">Cable TV networks</h2>
-              <p className="text-xs text-muted">Packages from the live provider catalogue</p>
+              <p className="text-xs text-muted">Packages from the live catalogue</p>
             </div>
           </div>
           {cableQuery.isLoading ? (

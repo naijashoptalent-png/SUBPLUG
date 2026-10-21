@@ -28,7 +28,7 @@ SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platfor
 - Registration, login, email verification, password reset, optional TOTP two-factor authentication.
 - Wallet funded through a hosted checkout flow. The mock gateway is used only until live Paystack keys are configured.
 - Airtime purchase with quote preview; network discounts apply in sandbox mode, while live SME purchases charge face value.
-- Data bundle purchase from a catalogue of provider plans.
+- Data bundle purchase from the live catalogue, grouped into customer-friendly Standard, Corporate, Gifting, Coupon, and Share categories without exposing the provider name.
 - Electricity payment with meter validation and token delivery.
 - Cable TV payment with smartcard validation and package selection.
 - Transaction history, filters, receipts, and a detailed status timeline.

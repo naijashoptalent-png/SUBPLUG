@@ -67,7 +67,7 @@ export function TransactionsPage() {
       <PageHeader
         eyebrow="Activity"
         title="Transactions"
-        description="Search purchases, trace provider statuses, and open a receipt for any order."
+        description="Search purchases, trace fulfilment statuses, and open a receipt for any order."
         actions={
           <Link to="/dashboard/support" className={buttonStyles('outline', 'sm')}>
             Dispute a transaction

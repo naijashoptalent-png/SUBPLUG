@@ -120,13 +120,21 @@ In production with `PAYMENT_GATEWAY=mock`, boot fails unless `ALLOW_SANDBOX_IN_P
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `VTU_PROVIDER` | `mock` | `mock` or `sme` |
+| `VTU_PROVIDER` | `mock` | Primary provider: `mock`, `sme`, or `maskawasub` |
+| `VTU_BACKUP_PROVIDER` | empty | Optional secondary provider used for catalogue/health checks. Purchases are never retried automatically after submission |
 | `ALLOW_MOCK_VTU` | `true` | Documents intent; mock providers are blocked in production unless the global sandbox override is set |
 | `VTU_API_BASE_URL` | empty | SME API origin, normally `https://smeapi.com.ng` |
 | `VTU_API_KEY` | empty | SME API key. Server-side only; send as `Authorization: Token <key>` |
-| `VTU_TIMEOUT_MS` | `15000` | Outbound request timeout |
-| `VTU_CATALOGUE_FILE` | empty | Optional JSON file with cable/electricity numeric IDs enabled on the account |
+| `VTU_TIMEOUT_MS` | `15000` | Outbound request timeout for VTU calls |
+| `VTU_CATALOGUE_FILE` | empty | Optional JSON file with SME cable/electricity numeric IDs enabled on the account |
 | `CATALOGUE_SYNC_INTERVAL_MS` | `900000` | Background catalogue refresh interval, minimum 60 seconds |
+| `VTU_AIRTIME_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
+| `VTU_DATA_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
+| `VTU_CABLE_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
+| `VTU_ELECTRICITY_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
+| `VTU_EDUCATION_PROVIDER` | empty | Reserved for education/exam PINs once an adapter is certified |
+| `VTU_AIRTIME_TO_CASH_PROVIDER` | empty | Reserved for airtime-to-cash once an adapter is certified |
+| `VTU_RECHARGE_CARD_PROVIDER` | empty | Reserved for recharge-card PINs once an adapter is certified |
 
 The `sme` adapter uses these documented endpoints:
 
@@ -162,7 +170,22 @@ Airtime and data require only `VTU_API_BASE_URL` and `VTU_API_KEY`. The live ada
 
 Do not guess these values. Then set `VTU_CATALOGUE_FILE=server/config/vtu-catalogue.json` (relative to the server process working directory) and run `npm run seed`.
 
-In production with `VTU_PROVIDER=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`. With a live provider, `VTU_API_BASE_URL` and `VTU_API_KEY` are required.
+In production with `VTU_PROVIDER=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`. The SME adapter requires `VTU_API_BASE_URL` and `VTU_API_KEY`; the MaskawaSub adapter requires `MASKAWASUB_API_BASE_URL` and `MASKAWASUB_API_KEY`.
+
+#### MaskawaSub (secondary provider)
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MASKAWASUB_API_BASE_URL` | `https://maskawasub.com` | MaskawaSub origin |
+| `MASKAWASUB_API_KEY` | empty | MaskawaSub API key. Server-side only; send as `Authorization: Token <key>` |
+| `MASKAWASUB_LIVE_PURCHASES` | `false` | Global live-purchase gate. Must remain false until a funded purchase/status certification has been signed off |
+| `MASKAWASUB_CERTIFIED_SERVICES` | empty | Comma-separated per-service allowlist (for example `CABLE`). Empty means no service may purchase, even if the global gate is open |
+
+MaskawaSub catalogue reads use `GET /api/user/` (data plans, cable packages, balance), `GET /api/disco/` (electricity providers), and the account snapshot's `Cableplan`/`Exam`/`recharge` sections. The adapter deliberately does **not** call `/api/history/` or `/api/sms/`: during read-only probing those endpoints returned account-wide records that could contain third-party personal data.
+
+Live purchase, validation and status request contracts for MaskawaSub were not certified against a funded transaction in this repository. `MASKAWASUB_LIVE_PURCHASES=false` makes the adapter fail closed before any wallet debit. Even when the global gate is open, a service must also appear in `MASKAWASUB_CERTIFIED_SERVICES`; an empty or mistyped allowlist therefore disables every live purchase. Certify one service at a time and add only that service to the allowlist. Do not add education/airtime-to-cash/recharge-card routes until the provider confirms the request fields and per-reference status query. Airtime-to-cash additionally needs a defined settlement/refund policy because it is not an instant wallet purchase.
+
+Per-service routing selects a provider before the wallet is touched. It is not a retry mechanism: after a request has been submitted, an uncertain outcome remains `REQUIRES_REVIEW` and is reconciled against the *original* provider.
 
 ### Redis and background workers
 

@@ -16,7 +16,7 @@ import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { ServiceIcon } from '@/components/ui/ServiceIcon';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { FormError } from '@/components/ui/FormError';
-import { useCablePackages, useCableProviders, useValidateSmartcard, type MeterValidation } from '@/hooks/useCatalogue';
+import { useCablePackages, useCableProviders, useServices, useValidateSmartcard, type MeterValidation } from '@/hooks/useCatalogue';
 import { usePurchaseCable } from '@/hooks/usePurchases';
 import { useWallet } from '@/hooks/useWallet';
 import { cableFormSchema, type CableForm } from '@/lib/schemas';
@@ -32,6 +32,7 @@ export function PayCablePage() {
   const [receipt, setReceipt] = useState<Transaction | null>(null);
   const idempotencyKey = useRef(newIdempotencyKey('cable'));
 
+  const servicesQuery = useServices();
   const providersQuery = useCableProviders();
   const validateSmartcard = useValidateSmartcard();
   const purchase = usePurchaseCable();
@@ -105,6 +106,30 @@ export function PayCablePage() {
   });
 
   const providers = providersQuery.data ?? [];
+  const serviceEnabled = servicesQuery.data?.services.find((service) => service.key === 'CABLE')?.enabled;
+
+  if (serviceEnabled === false) {
+    return (
+      <>
+        <Helmet>
+          <title>Pay cable TV — SubPlug</title>
+        </Helmet>
+        <PageHeader
+          eyebrow="Buy & pay"
+          title="Pay cable TV"
+          description="Cable subscriptions are temporarily paused while our backup provider is being certified."
+        />
+        <Card className="mt-6 p-6">
+          <p className="text-sm text-muted">
+            Cable TV is not accepting new subscriptions right now. Your wallet is unaffected. Please try again later or contact support.
+          </p>
+          <Link to="/dashboard" className={buttonStyles('outline', 'sm', 'mt-4')}>
+            Back to dashboard
+          </Link>
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>

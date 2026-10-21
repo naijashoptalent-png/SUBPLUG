@@ -115,6 +115,8 @@ export interface DataPlan {
   name: string;
   dataVolume: string | null;
   validity: string | null;
+  category: string;
+  categoryLabel: string;
   priceMinor: number;
   isSandbox: boolean;
   available: boolean;
@@ -189,8 +191,9 @@ export interface Transaction {
   currency: string;
   status: TransactionStatus;
   paymentMethod: string;
-  provider: string;
-  providerReference: string | null;
+  /** Admin-only operational data; omitted from customer responses. */
+  provider?: string;
+  providerReference?: string | null;
   providerStatus: string | null;
   providerPayload?: unknown;
   reviewReason: string | null;
@@ -225,7 +228,7 @@ export interface DashboardSummary {
   recentTransactions: Transaction[];
   statusCounts: { successful: number; pending: number; failed: number };
   monthlyActivity: Array<{ date: string; amountMinor: number }>;
-  provider: { isSandbox: boolean; key: string };
+  provider: { isSandbox: boolean };
 }
 
 export interface NotificationItem {
@@ -351,6 +354,8 @@ export interface AdminPlan {
   network: string | null;
   name: string;
   providerPlanId: string;
+  category?: string | null;
+  categoryLabel?: string | null;
   costMinor: number;
   sellingPriceMinor: number;
   enabled: boolean;

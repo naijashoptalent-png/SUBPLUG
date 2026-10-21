@@ -5,6 +5,7 @@ import { SystemSetting } from '../models';
 import { syncCatalogue } from '../services/catalogueService';
 import { seedAdmin } from './seedAdmin';
 import { env } from '../config/env';
+import { getConfiguredProviderKeys } from '../providers';
 
 async function seed() {
   await connectDatabase();
@@ -18,10 +19,12 @@ async function seed() {
   }
   logger.info('Default system settings ensured (existing settings not overwritten)');
 
-  if (env.VTU_PROVIDER !== 'mock' && (!env.VTU_API_BASE_URL || !env.VTU_API_KEY)) {
-    throw new Error(
-      `VTU_PROVIDER=${env.VTU_PROVIDER} requires VTU_API_BASE_URL and VTU_API_KEY. Catalogue was not synced.`
-    );
+  const providerKeys = getConfiguredProviderKeys();
+  if (providerKeys.includes('sme') && (!env.VTU_API_BASE_URL || !env.VTU_API_KEY)) {
+    throw new Error('The SME VTU provider requires VTU_API_BASE_URL and VTU_API_KEY. Catalogue was not synced.');
+  }
+  if (providerKeys.includes('maskawasub') && !env.MASKAWASUB_API_KEY) {
+    throw new Error('The MaskawaSub VTU provider requires MASKAWASUB_API_KEY. Catalogue was not synced.');
   }
   const sync = await syncCatalogue();
   logger.info(sync, 'Catalogue synchronized');

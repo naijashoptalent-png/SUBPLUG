@@ -243,6 +243,9 @@ export function AdminPlansPage() {
                           <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] text-subtle">
                             <span className="max-w-[180px] truncate">{plan.providerPlanId}</span>
                             {kind ? <Badge tone="neutral">{kind.replace(/_/g, ' ')}</Badge> : null}
+                            {plan.service === 'DATA' && plan.categoryLabel ? (
+                              <Badge tone="neutral">{plan.categoryLabel}</Badge>
+                            ) : null}
                           </p>
                         </td>
                         <td className="whitespace-nowrap text-xs text-muted">{SERVICE_LABELS[plan.service] ?? plan.service}</td>

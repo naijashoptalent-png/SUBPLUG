@@ -4,7 +4,7 @@ import { env } from './config/env';
 import { connectDatabase, disconnectDatabase, supportsTransactions } from './config/db';
 import { logger } from './config/logger';
 import { ServicePlan, Provider } from './models';
-import { getVtuProvider } from './providers';
+import { getConfiguredProviderKeys, getServiceProviderKey, getVtuProviderByKey } from './providers';
 import { getPaymentProvider } from './providers/paymentIndex';
 import { syncCatalogue } from './services/catalogueService';
 import { startScheduler, stopScheduler } from './jobs/scheduler';
@@ -19,21 +19,27 @@ async function bootstrap() {
   // has no products yet. Never overwrites a synced or manually curated catalogue.
   if (env.NODE_ENV !== 'production') {
     try {
-      const provider = getVtuProvider();
-      await Provider.findOneAndUpdate(
-        { key: provider.key },
-        {
-          $set: {
-            name: provider.name,
-            kind: 'VTU',
-            adapter: provider.key,
-            isSandbox: provider.isSandbox,
-            enabled: true,
-          },
-          $setOnInsert: { health: 'UNKNOWN', errorCount: 0 },
-        },
-        { upsert: true }
-      );
+      for (const key of getConfiguredProviderKeys()) {
+        try {
+          const configured = getVtuProviderByKey(key);
+          await Provider.findOneAndUpdate(
+            { key: configured.key },
+            {
+              $set: {
+                name: configured.name,
+                kind: 'VTU',
+                adapter: configured.key,
+                isSandbox: configured.isSandbox,
+                enabled: true,
+              },
+              $setOnInsert: { health: 'UNKNOWN', errorCount: 0 },
+            },
+            { upsert: true }
+          );
+        } catch (error) {
+          logger.warn({ err: error, provider: key }, 'Configured VTU provider could not be initialized');
+        }
+      }
       try {
         const payment = getPaymentProvider();
         await Provider.findOneAndUpdate(
@@ -53,8 +59,20 @@ async function bootstrap() {
       } catch (error) {
         logger.warn({ err: error }, 'Payment provider not configured');
       }
-      if ((await ServicePlan.countDocuments({ provider: provider.key })) === 0) {
-        logger.info({ provider: provider.key }, 'No catalogue for active VTU provider; syncing');
+      let needsSync = false;
+      for (const key of getConfiguredProviderKeys()) {
+        const services = (['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as const).filter(
+          (service) => getServiceProviderKey(service) === key
+        );
+        if (!services.length) continue;
+        const count = await ServicePlan.countDocuments({ provider: key, service: { $in: services }, enabled: true });
+        if (count === 0) {
+          needsSync = true;
+          break;
+        }
+      }
+      if (needsSync) {
+        logger.info({ providers: getConfiguredProviderKeys() }, 'No catalogue for an active VTU route; syncing');
         await syncCatalogue();
       }
     } catch (error) {

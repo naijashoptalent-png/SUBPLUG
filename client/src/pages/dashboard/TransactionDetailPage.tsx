@@ -181,7 +181,6 @@ export function TransactionDetailPage() {
                   { label: 'Reference', value: <span className="font-mono text-xs">{transaction.reference}</span> },
                   { label: 'Date', value: formatDateTime(transaction.createdAt) },
                   { label: 'Payment method', value: transaction.paymentMethod },
-                  { label: 'Provider', value: transaction.provider },
                   ...recipientItems,
                 ]}
                 columns={2}
@@ -193,7 +192,7 @@ export function TransactionDetailPage() {
                   <p className="mt-1 text-sm font-semibold">{transaction.plan.name ?? transaction.plan.code}</p>
                   <p className="mt-0.5 text-xs text-muted">
                     {[transaction.plan.dataVolume, transaction.plan.validity].filter(Boolean).join(' · ') ||
-                      'Provider-defined package'}
+                      'Package details'}
                   </p>
                 </div>
               ) : null}
@@ -297,15 +296,11 @@ export function TransactionDetailPage() {
           </Card>
 
           <Card>
-            <CardHeader title="Provider trace" description="Useful for support investigations" />
+            <CardHeader title="Delivery status" description="Useful for support investigations" />
             <div className="space-y-3 p-5 text-xs sm:p-6">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted">Provider reference</span>
-                <span className="font-mono text-[10px] text-ink">{transaction.providerReference ?? '—'}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-muted">Provider status</span>
-                <span className="font-medium text-ink">{transaction.providerStatus ?? '—'}</span>
+                <span className="text-muted">Order status</span>
+                <span className="font-medium text-ink">{STATUS_LABELS[transaction.status] ?? transaction.status}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-muted">Environment</span>
@@ -336,7 +331,7 @@ export function TransactionDetailPage() {
 
       <p className="mt-5 flex items-center gap-1.5 text-[11px] text-subtle">
         <Copy className="h-3 w-3" aria-hidden="true" />
-        This page shows the server&apos;s record. It does not prove delivery by itself; the provider status is shown
+        This page shows the server&apos;s record. It does not prove delivery by itself; the fulfilment status is shown
         separately.
       </p>
     </>

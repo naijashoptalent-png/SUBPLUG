@@ -383,6 +383,22 @@ Notes:
 7. Confirm the provider status endpoint semantics and keep reconciliation enabled.
 8. Review `CATALOGUE_SYNC_INTERVAL_MS`; live prices can change and stale costs are a commercial risk.
 
+### MaskawaSub (secondary provider)
+
+1. Put `MASKAWASUB_API_KEY` in the server environment only. Never place it in a `VITE_*` variable or commit it.
+2. Confirm the read-only catalogue through the admin provider health check. The adapter reads `GET /api/user/` and `GET /api/disco/`; it deliberately does not read `/api/history/` or `/api/sms/`.
+3. Keep `MASKAWASUB_LIVE_PURCHASES=false` and `MASKAWASUB_CERTIFIED_SERVICES=` empty until the provider has confirmed, in writing or through a funded certification, the exact request fields and per-reference status contract for each service.
+4. Do not enable MaskawaSub cable, electricity, airtime, or data for customers before that certification. `VTU_CABLE_PROVIDER=maskawasub`, `VTU_ELECTRICITY_PROVIDER=maskawasub`, `VTU_AIRTIME_PROVIDER=maskawasub`, and `VTU_DATA_PROVIDER=maskawasub` may be used to stage a route, but `listServices` hides any service whose provider is not certified for live purchases.
+5. Certify one service at a time with a controlled low-value purchase. After the service passes, set `MASKAWASUB_CERTIFIED_SERVICES` to **only** that service (for example `CABLE`) and set `MASKAWASUB_LIVE_PURCHASES=true`:
+   - submit the purchase and record the provider reference;
+   - confirm exactly one wallet debit;
+   - confirm the provider's own dashboard/history shows exactly one order;
+   - confirm success, definitive failure, pending, timeout, and duplicate-reference behaviour;
+   - confirm the per-reference status query before enabling reconciliation.
+   Leave every other service out of the allowlist until it has passed its own certification.
+6. If a status contract is unavailable, set `MASKAWASUB_LIVE_PURCHASES=false` and clear `MASKAWASUB_CERTIFIED_SERVICES`. Uncertain outcomes must not be auto-refunded or retried on the other provider.
+7. Education/exam pins, airtime-to-cash, and recharge-card PINs are **not enabled** in this codebase. Do not add routes for them until their request schemas, settlement rules, and status contracts are confirmed.
+
 ### Webhook exposure
 
 - Webhooks must be reachable without authentication but with signature verification.
@@ -426,6 +442,8 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 - [ ] `ALLOW_SANDBOX_IN_PRODUCTION` is unset or `false`.
 - [ ] `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=sme`.
 - [ ] `VTU_API_KEY` is stored only in the server environment and has been rotated if exposed.
+- [ ] `MASKAWASUB_API_KEY` is server-only; `MASKAWASUB_LIVE_PURCHASES=false` and `MASKAWASUB_CERTIFIED_SERVICES=` unless that exact service has passed certification.
+- [ ] Per-service routes (`VTU_AIRTIME_PROVIDER`, `VTU_DATA_PROVIDER`, `VTU_CABLE_PROVIDER`, `VTU_ELECTRICITY_PROVIDER`, etc.) point only at certified providers.
 - [ ] CORS contains only intended origins.
 - [ ] Cookies have correct domain, SameSite, and Secure attributes.
 - [ ] MongoDB/Redis are not publicly reachable.
@@ -433,6 +451,21 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 - [ ] Rate limits reviewed for expected traffic.
 - [ ] SMTP configured; verification and reset emails tested.
 - [ ] Audit log and reconciliation pages accessible to the right staff.
+
+### Rotating exposed provider keys
+
+Treat both VTU API keys as account credentials: they can read provider catalogue/account data and, when live purchases are enabled, submit orders.
+
+1. In the SME dashboard, create a new API key. If multiple active keys are supported, keep the old key active until the new one has passed the health check.
+2. In the MaskawaSub dashboard, create a new API key. MaskawaSub live purchases are disabled, so this rotation has no customer-facing purchase impact.
+3. Update only `server/.env`:
+   - `VTU_API_KEY=<new SME key>`
+   - `MASKAWASUB_API_KEY=<new MaskawaSub key>`
+4. Never paste the new keys into chat, tickets, docs, client environment variables, or git. Do not put them in `VITE_*` variables.
+5. Restart the API so it reloads `server/.env`.
+6. Run the admin provider health check. Both providers must be healthy. A key test is a read-only health check, not a live purchase.
+7. Revoke/delete the old keys in both dashboards. Confirm they no longer authenticate. If a key was committed or included in a build artifact, rotate it again and purge the old value from git history and deployment logs.
+8. Review both provider dashboards for unexpected activity or balance changes.
 
 ### Financial
 

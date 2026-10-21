@@ -11,7 +11,12 @@ import {
 } from '../models';
 import { AppError } from '../utils/AppError';
 import { paginationMeta } from '../utils/pagination';
-import { getVtuProvider } from '../providers';
+import {
+  getConfiguredProviderKeys,
+  getServiceProviderKey,
+  getVtuProvider,
+  getVtuProviderByKey,
+} from '../providers';
 import { getPaymentProvider } from '../providers/paymentIndex';
 import { env } from '../config/env';
 import { writeAudit } from './auditService';
@@ -293,6 +298,22 @@ export async function listProviders() {
   } catch {
     paymentKey = 'unconfigured';
   }
+
+  const configuredVtu = getConfiguredProviderKeys().map((key) => {
+    try {
+      const instance = getVtuProviderByKey(key);
+      return { key: instance.key, name: instance.name, isSandbox: instance.isSandbox, configured: true };
+    } catch {
+      return { key, name: key, isSandbox: false, configured: false };
+    }
+  });
+  const routes = Object.fromEntries(
+    (['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as const).map((service) => [
+      service,
+      getServiceProviderKey(service),
+    ])
+  );
+
   return {
     providers: providers.map((p) => ({
       key: p.key,
@@ -307,30 +328,38 @@ export async function listProviders() {
       errorCount: p.errorCount,
     })),
     activeVtu: { key: vtu.key, name: vtu.name, isSandbox: vtu.isSandbox },
+    configuredVtu,
+    routes,
     payment: { key: paymentKey, isSandbox: paymentSandbox, configured: paymentKey !== 'unconfigured' },
   };
 }
 
 export async function checkProviders(actorId: string, actorRole: string, actorName: string, req: Request) {
   const results: Array<Record<string, unknown>> = [];
-  try {
-    const vtu = getVtuProvider();
-    const health = await vtu.healthCheck();
-    await Provider.findOneAndUpdate(
-      { key: vtu.key },
-      {
-        $set: {
-          health: health.healthy ? 'HEALTHY' : 'DOWN',
-          lastCheckedAt: new Date(),
-          lastError: health.healthy ? null : health.message?.slice(0, 500) ?? 'Unhealthy',
+  for (const key of getConfiguredProviderKeys()) {
+    try {
+      const vtu = getVtuProviderByKey(key);
+      const health = await vtu.healthCheck();
+      await Provider.findOneAndUpdate(
+        { key: vtu.key },
+        {
+          $set: {
+            name: vtu.name,
+            kind: 'VTU',
+            adapter: vtu.key,
+            isSandbox: vtu.isSandbox,
+            health: health.healthy ? 'HEALTHY' : 'DOWN',
+            lastCheckedAt: new Date(),
+            lastError: health.healthy ? null : health.message?.slice(0, 500) ?? 'Unhealthy',
+          },
+          $inc: { errorCount: health.healthy ? 0 : 1 },
         },
-        $inc: { errorCount: health.healthy ? 0 : 1 },
-      },
-      { upsert: true }
-    );
-    results.push({ provider: vtu.key, kind: 'VTU', ...health });
-  } catch (error) {
-    results.push({ provider: 'vtu', kind: 'VTU', healthy: false, message: error instanceof Error ? error.message : 'Error' });
+        { upsert: true }
+      );
+      results.push({ provider: vtu.key, kind: 'VTU', ...health });
+    } catch (error) {
+      results.push({ provider: key, kind: 'VTU', healthy: false, message: error instanceof Error ? error.message : 'Error' });
+    }
   }
   try {
     const payment = getPaymentProvider();

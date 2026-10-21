@@ -217,7 +217,7 @@ These endpoints are public and cache-friendly. User-specific quotes are not stor
 
 | Method | Path | Query | Description |
 | --- | --- | --- | --- |
-| `GET` | `/services` | — | Service cards plus active provider metadata |
+| `GET` | `/services` | — | Service cards plus the live/sandbox flag |
 | `GET` | `/services/networks` | — | Airtime networks |
 | `GET` | `/services/data-plans` | `network?` | Enabled data plans |
 | `GET` | `/services/electricity-providers` | — | Discos and electricity fee |
@@ -228,6 +228,8 @@ These endpoints are public and cache-friendly. User-specific quotes are not stor
 | `POST` | `/services/validate-smartcard` | Auth + CSRF | Validate a smartcard before payment |
 | `GET` | `/services/public-settings` | — | Branding, support, maintenance, sandbox flags |
 | `POST` | `/services/contact` | Public + CSRF | Contact form (rate limited) |
+
+If a service's routed provider is not configured, or the service has not been certified for live purchases, `/services` reports that service with `enabled: false`. The electricity and cable catalogue endpoints then return empty `providers`/`packages` arrays rather than another provider's data, and the web client shows **Temporarily unavailable** instead of a purchase form. This is deliberate fail-closed behaviour: a disabled service never falls back to a different provider.
 
 ### Airtime quote example
 
@@ -248,6 +250,34 @@ GET /api/v1/services/airtime-quote?network=MTN&amountMinor=10000
 ```
 
 The discount comes from the runtime `discounts` setting, not from a fixed hard-coded value. In live SME mode the quote returns `discountPercent: 0` and `discountMinor: 0` because the provider deducts the full face value; configured airtime discounts apply to sandbox/demo purchases only.
+
+### Data plans
+
+```http
+GET /api/v1/services/data-plans?network=MTN
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "66f1c2a4f3b9a81234567890",
+      "providerPlanId": "1",
+      "network": "MTN",
+      "name": "110MB",
+      "dataVolume": "110MB",
+      "validity": "1 Day",
+      "category": "GIFTING",
+      "categoryLabel": "Gifting",
+      "priceMinor": 11016,
+      "isSandbox": false,
+      "available": true
+    }
+  ]
+}
+```
+
+`name` is the clean bundle name only. Plans are grouped by the provider's plan family in `category`/`categoryLabel`: `Standard`, `Corporate`, `Gifting`, `Coupon`, `Share`, or `Other`. The provider identity and raw provider family are not returned to customers. The provider's `SME` family is displayed as `Standard` to avoid exposing the provider name.
 
 ### Meter validation
 

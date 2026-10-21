@@ -121,11 +121,13 @@ export function OverviewPage() {
                   <p className="text-[10px] text-white/40">Successful purchases</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">Provider mode</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">Service mode</p>
                   <p className="mt-1 text-sm font-semibold text-white/90">
-                    {summary?.provider.isSandbox ? 'Sandbox (test)' : 'Live provider'}
+                    {summary?.provider.isSandbox ? 'Test mode' : 'Live'}
                   </p>
-                  <p className="text-[10px] text-white/40">{summary?.provider.key ?? '—'}</p>
+                  <p className="text-[10px] text-white/40">
+                    {summary?.provider.isSandbox ? 'Simulated delivery' : 'Real delivery'}
+                  </p>
                 </div>
               </div>
             </div>

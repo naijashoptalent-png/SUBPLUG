@@ -263,12 +263,15 @@ Sandbox simulation uses the same `confirmFunding` path, so it exercises producti
 
 ## 8. Catalogue and pricing
 
-- `ServicePlan` stores provider plan IDs, network/package metadata, provider cost, selling price, and enabled state.
-- `seed.ts` pulls the catalogue from the active VTU adapter and applies the runtime pricing settings. A scheduled job refreshes it every `CATALOGUE_SYNC_INTERVAL_MS` because live provider prices can change.
-- Data prices apply `pricing.dataMarkupPercent` over provider cost. Cable prices apply `pricing.cableMarkupPercent`. Airtime uses `discounts.airtimePercent` per network in sandbox mode. The live SME provider deducts the full airtime face value, so live quotes force the discount to 0; otherwise the platform would fund the difference.
+- `ServicePlan` stores provider plan IDs, network/package metadata, provider cost, selling price, and enabled state. Data plans also store a normalized customer-facing `category` (`STANDARD`, `CORPORATE`, `GIFTING`, `COUPON`, `SHARE`, or `OTHER`) derived from the provider family during catalogue sync.
+- Customer APIs return clean bundle names plus `categoryLabel`; they do not return the active provider identity, raw provider family, or provider reference. The provider's `SME` family is labelled `Standard` so the provider name is not exposed in the storefront.
+- `seed.ts` pulls each configured provider's catalogue for the services routed to it and applies the runtime pricing settings. A scheduled job refreshes it every `CATALOGUE_SYNC_INTERVAL_MS` because live provider prices can change.
+- Data prices apply `pricing.dataMarkupPercent` over provider cost. Cable prices apply `pricing.cableMarkupPercent`. Airtime uses `discounts.airtimePercent` per network in sandbox mode. Live airtime quotes force the discount to 0; otherwise the platform would fund the difference.
 - Electricity can apply `pricing.electricityFeeMinor`.
 - Administrators can enable/disable plans, rename them, and override selling prices. `preserveManualPlanPricing` protects manual overrides during catalogue synchronisation.
 - Purchase services re-read the plan and runtime limits at purchase time; the client's displayed price is never trusted.
+- Service plans are isolated by provider key. A successful sync only enables plans for the provider currently routed to that service; plans from another provider are disabled so a stale provider ID cannot be purchased. A provider switch therefore requires a fresh sync.
+- A service is only shown as enabled when its routed adapter passes `assertCanPurchase`. An adapter with an uncertified contract (currently MaskawaSub) can still contribute a read-only catalogue and health status, but cannot accept customer funds.
 
 Airtime quotes are available from `GET /services/airtime-quote`, and the purchase response includes `amountMinor`, `discountMinor`, `feeMinor`, and `payableMinor`.
 
@@ -283,6 +286,8 @@ interface VtuProvider {
   key: string;
   name: string;
   isSandbox: boolean;
+  supportedServices: readonly ServiceType[];
+  assertCanPurchase(service: ServiceType): void;
   getNetworks(): Promise<ProviderNetwork[]>;
   getDataPlans(network?: string): Promise<ProviderDataPlan[]>;
   getElectricityProviders(): Promise<ProviderDisco[]>;
@@ -296,14 +301,15 @@ interface VtuProvider {
 }
 ```
 
-Two implementations exist:
+Three implementations exist:
 
 - `SmeApiProvider` — live SME API integration for airtime, data, validation, purchases, status, and health. It sends `Authorization: Token <VTU_API_KEY>`; the key remains server-side.
+- `MaskawaSubProvider` - secondary live adapter. Catalogue reads are confirmed (`/api/user/`, `/api/disco/`, cable plans); live purchase/status contracts are not certified, so `MASKAWASUB_LIVE_PURCHASES=false` makes every purchase fail before the wallet is debited. Even when that global gate is open, only services listed in `MASKAWASUB_CERTIFIED_SERVICES` may purchase; the allowlist defaults to empty and is intended to be populated one service at a time. It reads data-plan IDs, cable IDs, and electricity IDs from the provider account rather than guessing them.
 - `MockVtuProvider` — deterministic sandbox, no network calls, clearly flagged.
 
-Airtime and data use the live provider directly. Cable and electricity catalogue entries come from `VTU_CATALOGUE_FILE`, which contains confirmed numeric provider/plan IDs; the adapter fails closed rather than guessing. Provider plans are isolated by provider key, and stale plans from a previous provider are disabled during sync.
+Airtime and data use the primary provider by default; they can be routed independently with `VTU_AIRTIME_PROVIDER`/`VTU_DATA_PROVIDER`. Cable and electricity can be routed to MaskawaSub with `VTU_CABLE_PROVIDER`/`VTU_ELECTRICITY_PROVIDER`; SME cable/electricity still require `VTU_CATALOGUE_FILE` with confirmed numeric IDs. Provider plans are isolated by provider key, and stale plans from a previous provider are disabled during sync.
 
-Provider selection happens once and is cached. Mock adapters are blocked in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true` is explicitly set.
+Provider selection is resolved per service from configuration. The selected adapter is stored on the transaction, and reconciliation/status checks always use that same adapter. There is no automatic cross-provider retry after submission. Mock adapters are blocked in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true` is explicitly set.
 
 ### Payment provider
 

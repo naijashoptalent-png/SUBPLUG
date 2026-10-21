@@ -122,6 +122,8 @@ export function useAdminProviders() {
       getData<{
         providers: ProviderInfo[];
         activeVtu: { key: string; name: string; isSandbox: boolean };
+        configuredVtu: Array<{ key: string; name: string; isSandbox: boolean; configured: boolean }>;
+        routes: Partial<Record<'AIRTIME' | 'DATA' | 'ELECTRICITY' | 'CABLE', string>>;
         payment: { key: string; isSandbox: boolean; configured: boolean };
       }>('/admin/providers'),
   });

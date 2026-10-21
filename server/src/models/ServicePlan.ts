@@ -16,6 +16,8 @@ export interface IServicePlan extends Document {
   name: string;
   dataVolume?: string | null;
   validity?: string | null;
+  /** Customer-facing data-plan category code; null for non-data plans. */
+  category?: string | null;
   costMinor: number;
   sellingPriceMinor: number;
   enabled: boolean;
@@ -35,6 +37,7 @@ const servicePlanSchema = new Schema<IServicePlan>(
     name: { type: String, required: true, trim: true },
     dataVolume: { type: String, default: null },
     validity: { type: String, default: null },
+    category: { type: String, default: null, index: true },
     costMinor: { type: Number, required: true, min: 0 },
     sellingPriceMinor: { type: Number, required: true, min: 1 },
     enabled: { type: Boolean, default: true, index: true },

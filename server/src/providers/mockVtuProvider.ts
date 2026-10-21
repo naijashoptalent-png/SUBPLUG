@@ -88,6 +88,11 @@ export class MockVtuProvider implements VtuProvider {
   readonly key = 'mock';
   readonly name = 'Sandbox VTU Adapter';
   readonly isSandbox = true;
+  readonly supportedServices = ['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as const;
+
+  assertCanPurchase(): void {
+    // Sandbox purchases are explicitly supported for local QA.
+  }
 
   private readonly results = new Map<string, ProviderStatusResult>();
 

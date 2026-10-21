@@ -11,17 +11,23 @@ export interface ProviderDataPlan {
   name: string;
   dataVolume: string;
   validity: string;
+  /** Raw provider plan family (for example SME, Corporate, Gifting). */
+  planType?: string;
   costMinor: number;
 }
 
 export interface ProviderDisco {
   code: string;
   name: string;
+  /** Numeric/opaque ID used by the provider in validation and purchase calls. */
+  providerId?: string;
 }
 
 export interface ProviderCableNetwork {
   code: string;
   name: string;
+  /** Numeric/opaque ID used by the provider in validation and purchase calls. */
+  providerNetworkId?: string;
 }
 
 export interface ProviderCablePackage {
@@ -30,6 +36,8 @@ export interface ProviderCablePackage {
   name: string;
   validity: string;
   costMinor: number;
+  /** Provider's cable-network ID (for example MaskawaSub GOTV=1). */
+  providerNetworkId?: string;
 }
 
 export interface MeterValidation {
@@ -93,6 +101,15 @@ export interface VtuProvider {
   readonly key: string;
   readonly name: string;
   readonly isSandbox: boolean;
+  /** Services this adapter can actually fulfil, not merely list. */
+  readonly supportedServices: readonly ServiceType[];
+
+  /**
+   * Throws when a live purchase must not be attempted (for example an adapter
+   * whose purchase contract has not been certified). Called before any wallet
+   * debit so an uncertified provider can never leave customer funds reserved.
+   */
+  assertCanPurchase(service: ServiceType): void;
 
   getNetworks(): Promise<ProviderNetwork[]>;
   getDataPlans(network?: string): Promise<ProviderDataPlan[]>;

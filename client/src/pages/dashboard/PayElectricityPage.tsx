@@ -17,7 +17,7 @@ import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { ServiceIcon } from '@/components/ui/ServiceIcon';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ErrorState, Skeleton } from '@/components/ui/States';
-import { useElectricityProviders, useValidateMeter, type MeterValidation } from '@/hooks/useCatalogue';
+import { useElectricityProviders, useServices, useValidateMeter, type MeterValidation } from '@/hooks/useCatalogue';
 import { usePurchaseElectricity } from '@/hooks/usePurchases';
 import { useWallet } from '@/hooks/useWallet';
 import { electricityFormSchema, type ElectricityForm } from '@/lib/schemas';
@@ -35,6 +35,7 @@ export function PayElectricityPage() {
   const [receipt, setReceipt] = useState<Transaction | null>(null);
   const idempotencyKey = useRef(newIdempotencyKey('elec'));
 
+  const servicesQuery = useServices();
   const providersQuery = useElectricityProviders();
   const validateMeter = useValidateMeter();
   const purchase = usePurchaseElectricity();
@@ -105,6 +106,30 @@ export function PayElectricityPage() {
   });
 
   const providers = providersQuery.data?.providers ?? [];
+  const serviceEnabled = servicesQuery.data?.services.find((service) => service.key === 'ELECTRICITY')?.enabled;
+
+  if (serviceEnabled === false) {
+    return (
+      <>
+        <Helmet>
+          <title>Pay electricity — SubPlug</title>
+        </Helmet>
+        <PageHeader
+          eyebrow="Buy & pay"
+          title="Pay electricity"
+          description="Prepaid and postpaid electricity payments are temporarily paused while our backup provider is being certified."
+        />
+        <Card className="mt-6 p-6">
+          <p className="text-sm text-muted">
+            Electricity is not accepting new payments right now. Your wallet is unaffected. Please try again later or contact support.
+          </p>
+          <Link to="/dashboard" className={buttonStyles('outline', 'sm', 'mt-4')}>
+            Back to dashboard
+          </Link>
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>

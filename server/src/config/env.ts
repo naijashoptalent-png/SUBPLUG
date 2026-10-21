@@ -45,14 +45,43 @@ const envSchema = z.object({
   ALLOW_MOCK_PAYMENTS: bool(true),
   PAYMENT_CURRENCY: z.string().default('NGN'),
 
-  VTU_PROVIDER: z.enum(['mock', 'sme']).default('mock'),
+  VTU_PROVIDER: z.enum(['mock', 'sme', 'maskawasub']).default('mock'),
+  // Optional secondary provider used for catalogue/health checks and for any
+  // service explicitly routed to it. Purchases are never retried automatically
+  // on another provider after submission.
+  VTU_BACKUP_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+  // Explicit routes for the two highest-volume services. Empty uses
+  // VTU_PROVIDER; an override changes selection before debit, never after
+  // submission.
+  VTU_AIRTIME_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+  VTU_DATA_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
   ALLOW_MOCK_VTU: bool(true),
   VTU_API_BASE_URL: z.string().optional().default(''),
   VTU_API_KEY: z.string().optional().default(''),
   VTU_TIMEOUT_MS: int(15000, 1000),
   // Optional JSON file containing the numeric cable/electricity IDs enabled on
-  // the provider account. Airtime/data/status do not need it.
+  // the SME account. Airtime/data/status do not need it.
   VTU_CATALOGUE_FILE: z.string().optional().default(''),
+
+  // Per-service routing. Empty means "use VTU_PROVIDER". A service is only
+  // enabled for customers when its routed provider is configured and certified
+  // for live purchases.
+  VTU_CABLE_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+  VTU_ELECTRICITY_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+  VTU_EDUCATION_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+  VTU_AIRTIME_TO_CASH_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+  VTU_RECHARGE_CARD_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
+
+  // MaskawaSub is a secondary provider. Its purchase/status contracts must be
+  // certified before this flag is enabled; until then reads (catalogue/health)
+  // are allowed but every live purchase fails closed before any wallet debit.
+  MASKAWASUB_API_BASE_URL: z.string().url().default('https://maskawasub.com'),
+  MASKAWASUB_API_KEY: z.string().optional().default(''),
+  MASKAWASUB_LIVE_PURCHASES: bool(false),
+  // Comma-separated allowlist of services individually certified for live
+  // MaskawaSub purchases. Empty means none; the global flag alone never enables
+  // a service.
+  MASKAWASUB_CERTIFIED_SERVICES: z.string().optional().default(''),
 
   USE_QUEUES: bool(false),
   REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
@@ -104,8 +133,26 @@ if (isProduction) {
   if (env.VTU_PROVIDER === 'mock' && !env.ALLOW_SANDBOX_IN_PRODUCTION) {
     throw new Error('Mock VTU provider is not allowed in production. Configure a licensed provider.');
   }
-  if (env.VTU_PROVIDER !== 'mock' && (!env.VTU_API_BASE_URL || !env.VTU_API_KEY)) {
-    throw new Error('A live VTU provider requires VTU_API_BASE_URL and VTU_API_KEY.');
+  const configuredVtuProviders = new Set(
+    [
+      env.VTU_PROVIDER,
+      env.VTU_BACKUP_PROVIDER,
+      env.VTU_CABLE_PROVIDER,
+      env.VTU_ELECTRICITY_PROVIDER,
+      env.VTU_EDUCATION_PROVIDER,
+      env.VTU_AIRTIME_TO_CASH_PROVIDER,
+      env.VTU_RECHARGE_CARD_PROVIDER,
+    ].filter(Boolean)
+  );
+  if (configuredVtuProviders.has('mock') && !env.ALLOW_SANDBOX_IN_PRODUCTION) {
+    throw new Error('Mock VTU provider is not allowed in production. Configure a licensed provider.');
+  }
+  const liveVtuProviders = new Set([...configuredVtuProviders].filter((key) => key !== 'mock'));
+  if (liveVtuProviders.has('sme') && (!env.VTU_API_BASE_URL || !env.VTU_API_KEY)) {
+    throw new Error('The SME VTU provider requires VTU_API_BASE_URL and VTU_API_KEY.');
+  }
+  if (liveVtuProviders.has('maskawasub') && !env.MASKAWASUB_API_KEY) {
+    throw new Error('The MaskawaSub VTU provider requires MASKAWASUB_API_KEY.');
   }
   if (env.COOKIE_SAME_SITE === 'none' && !env.API_BASE_URL.startsWith('https://')) {
     throw new Error('SameSite=None cookies require HTTPS. Set API_BASE_URL to an https URL.');

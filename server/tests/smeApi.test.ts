@@ -27,12 +27,18 @@ describe('SME API response normalisation', () => {
     expect(plans[0]).toMatchObject({
       providerPlanId: '1',
       network: 'MTN',
-      name: '500MB · SME',
+      name: '500MB',
       dataVolume: '500MB',
       validity: '7days',
+      planType: 'SME',
       costMinor: 23_000,
     });
-    expect(plans[1]).toMatchObject({ providerPlanId: '60', network: 'AIRTEL', costMinor: 7_750 });
+    expect(plans[1]).toMatchObject({
+      providerPlanId: '60',
+      network: 'AIRTEL',
+      planType: 'SME',
+      costMinor: 7_750,
+    });
   });
 
   it('fails closed when the data-plan endpoint does not return a success payload', () => {

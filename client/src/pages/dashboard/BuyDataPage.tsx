@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -36,6 +36,7 @@ const networks = [
 export function BuyDataPage() {
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Transaction | null>(null);
+  const [activeCategory, setActiveCategory] = useState('ALL');
   const idempotencyKey = useRef(newIdempotencyKey('data'));
   const walletQuery = useWallet();
   const purchase = usePurchaseData();
@@ -48,16 +49,46 @@ export function BuyDataPage() {
   const phone = form.watch('phone');
   const selectedPlanId = form.watch('providerPlanId');
   const plansQuery = useDataPlans(network);
-  const plans = plansQuery.data ?? [];
+  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
   const selectedPlan = plans.find((plan) => plan.providerPlanId === selectedPlanId);
+  const categories = useMemo(() => {
+    const rank = ['STANDARD', 'CORPORATE', 'GIFTING', 'COUPON', 'SHARE', 'OTHER'];
+    const grouped = new Map<string, { code: string; label: string; count: number }>();
+    for (const plan of plans) {
+      const existing = grouped.get(plan.category);
+      if (existing) existing.count += 1;
+      else grouped.set(plan.category, { code: plan.category, label: plan.categoryLabel, count: 1 });
+    }
+    return [...grouped.values()].sort((a, b) => {
+      const aRank = rank.indexOf(a.code);
+      const bRank = rank.indexOf(b.code);
+      return (aRank === -1 ? 99 : aRank) - (bRank === -1 ? 99 : bRank);
+    });
+  }, [plans]);
+  const filteredPlans = useMemo(
+    () => (activeCategory === 'ALL' ? plans : plans.filter((plan) => plan.category === activeCategory)),
+    [plans, activeCategory]
+  );
 
   useEffect(() => {
     idempotencyKey.current = newIdempotencyKey('data');
   }, [network, phone, selectedPlanId]);
 
+  useEffect(() => {
+    if (activeCategory !== 'ALL' && !categories.some((category) => category.code === activeCategory)) {
+      setActiveCategory('ALL');
+    }
+  }, [categories, activeCategory]);
+
   const changeNetwork = (code: DataForm['network']) => {
+    setActiveCategory('ALL');
     form.setValue('network', code, { shouldValidate: true });
     form.setValue('providerPlanId', '');
+  };
+
+  const changeCategory = (code: string) => {
+    setActiveCategory(code);
+    if (selectedPlanId) form.setValue('providerPlanId', '', { shouldValidate: false });
   };
 
   const submit = form.handleSubmit(async (values) => {
@@ -105,7 +136,7 @@ export function BuyDataPage() {
               <ServiceIcon service="DATA" />
               <div>
                 <h2 className="text-base font-semibold">Choose a bundle</h2>
-                <p className="text-xs text-muted">Plans are loaded from the active provider catalogue.</p>
+                <p className="text-xs text-muted">Plans are loaded from the live catalogue and grouped by type.</p>
               </div>
             </div>
           </div>
@@ -149,8 +180,42 @@ export function BuyDataPage() {
             <div>
               <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="label mb-0">Data plans</p>
-                {plans.length > 0 ? <p className="text-[11px] text-subtle">{plans.length} plans</p> : null}
+                {filteredPlans.length > 0 ? <p className="text-[11px] text-subtle">{filteredPlans.length} plans</p> : null}
               </div>
+
+              {categories.length > 1 ? (
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Plan type">
+                  <button
+                    type="button"
+                    aria-pressed={activeCategory === 'ALL'}
+                    onClick={() => changeCategory('ALL')}
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      activeCategory === 'ALL'
+                        ? 'border-brand-500 bg-brand-500/10 text-brand-800 dark:text-brand-200'
+                        : 'border-line bg-surface text-muted hover:border-brand-400/50 hover:text-ink'
+                    }`}
+                  >
+                    All
+                    <span className="ml-1 text-[10px] opacity-70">{plans.length}</span>
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category.code}
+                      type="button"
+                      aria-pressed={activeCategory === category.code}
+                      onClick={() => changeCategory(category.code)}
+                      className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        activeCategory === category.code
+                          ? 'border-brand-500 bg-brand-500/10 text-brand-800 dark:text-brand-200'
+                          : 'border-line bg-surface text-muted hover:border-brand-400/50 hover:text-ink'
+                      }`}
+                    >
+                      {category.label}
+                      <span className="ml-1 text-[10px] opacity-70">{category.count}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               {plansQuery.isLoading ? (
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -174,7 +239,7 @@ export function BuyDataPage() {
                 />
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Data plan">
-                  {plans.map((plan) => {
+                  {filteredPlans.map((plan) => {
                     const selected = plan.providerPlanId === selectedPlanId;
                     return (
                       <button
@@ -193,7 +258,8 @@ export function BuyDataPage() {
                       >
                         <span className="text-sm font-semibold text-ink">{plan.name}</span>
                         <span className="mt-1 text-[11px] text-muted">
-                          {[plan.dataVolume, plan.validity].filter(Boolean).join(' · ') || 'Bundle details from provider'}
+                          {[plan.validity, activeCategory === 'ALL' ? plan.categoryLabel : ''].filter(Boolean).join(' · ') ||
+                            'Data bundle'}
                         </span>
                         <span className="mt-3 flex items-center justify-between gap-2">
                           <span className="text-base font-semibold text-brand-800 dark:text-brand-200">

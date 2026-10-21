@@ -8,12 +8,13 @@ import { hashRequestPayload } from '../utils/crypto';
 import { generateReference } from '../utils/reference';
 import { formatNaira } from '../utils/money';
 import { sanitizeProviderPayload } from '../utils/redact';
+import { sanitiseCustomerCopy } from '../utils/customerCopy';
 import { paginationMeta } from '../utils/pagination';
 import { runInTransaction } from '../utils/transactionRunner';
 import { debitWallet, refundTransaction } from './walletService';
-import { quoteAirtime, getEnabledPlan } from './catalogueService';
+import { cleanDataPlanName, quoteAirtime, getEnabledPlan } from './catalogueService';
 import { getSetting } from './settingsService';
-import { getVtuProvider } from '../providers';
+import { getVtuProvider, getVtuProviderByKey, getVtuProviderForService } from '../providers';
 import { ProviderPurchaseResult, ProviderStatusResult, ProviderPurchaseRequest } from '../providers/types';
 import { normalizePhone } from './authService';
 import { transitionTransaction } from './transactionStateMachine';
@@ -53,6 +54,23 @@ function selectWithToken<T extends Query<any, any>>(query: T): T {
 
 function serialise(transaction: ITransaction, includeAdmin = false) {
   const isSandbox = Boolean((transaction.metadata as Record<string, unknown> | null)?.isSandbox);
+  const plan =
+    transaction.plan && !includeAdmin && transaction.plan.name
+      ? { ...transaction.plan, name: cleanDataPlanName(transaction.plan.name) }
+      : transaction.plan;
+  const failureReason = includeAdmin
+    ? transaction.failureReason
+    : isSandbox
+      ? sanitiseCustomerCopy(transaction.failureReason)
+      : transaction.failureReason
+        ? 'The purchase could not be completed. Please contact support with your reference.'
+        : null;
+  const reviewReason = includeAdmin
+    ? transaction.reviewReason
+    : transaction.status === 'REQUIRES_REVIEW'
+      ? sanitiseCustomerCopy(transaction.reviewReason) ??
+        'This purchase is under review. Support will update you.'
+      : null;
   return {
     id: String(transaction._id),
     reference: transaction.reference,
@@ -67,26 +85,34 @@ function serialise(transaction: ITransaction, includeAdmin = false) {
     currency: transaction.currency,
     status: transaction.status,
     paymentMethod: transaction.paymentMethod,
-    provider: transaction.provider,
-    providerReference: transaction.providerReference,
-    providerStatus: transaction.providerStatus,
+    // Provider identity, status and reference are operational data. Customers
+    // receive only the platform transaction reference.
+    provider: includeAdmin ? transaction.provider : undefined,
+    providerReference: includeAdmin ? transaction.providerReference : undefined,
+    providerStatus: includeAdmin ? transaction.providerStatus ?? null : null,
     providerPayload: includeAdmin ? transaction.providerPayload : undefined,
-    reviewReason: transaction.reviewReason,
+    reviewReason,
     recipient: transaction.recipient,
-    plan: transaction.plan,
+    plan,
     fulfillment: {
       token: transaction.fulfillment?.token ?? null,
       units: transaction.fulfillment?.units ?? null,
       customerName: transaction.fulfillment?.customerName ?? null,
       customerAddress: transaction.fulfillment?.customerAddress ?? null,
     },
-    failureReason: transaction.failureReason,
+    failureReason,
     refundedAt: transaction.refundedAt,
     refundedAmountMinor: transaction.refundedAmountMinor,
     createdAt: transaction.createdAt,
     updatedAt: transaction.updatedAt,
     completedAt: transaction.completedAt,
-    statusHistory: transaction.statusHistory,
+    // Timeline reasons can contain provider messages. Customers get the state
+    // and timestamp only; administrators get the operational note.
+    statusHistory: transaction.statusHistory.map((event) => ({
+      status: event.status,
+      at: event.at,
+      ...(includeAdmin && event.reason ? { note: event.reason } : {}),
+    })),
     isSandbox,
     metadata: includeAdmin ? transaction.metadata : { isSandbox },
   };
@@ -136,7 +162,10 @@ async function createPurchase(actor: Actor, prepared: PreparedPurchase, idempote
 
   await assertDailyLimit(actor.userId, prepared.payableMinor);
 
-  const provider = getVtuProvider();
+  const provider = getVtuProviderForService(prepared.service);
+  // Fail before the wallet is touched if the routed provider is not certified
+  // for live purchases (for example MaskawaSub before contract sign-off).
+  provider.assertCanPurchase(prepared.service);
   let transaction: ITransaction;
   try {
     transaction = await runInTransaction(async (session) => {
@@ -254,9 +283,10 @@ async function submitToProvider(userId: string, transactionId: string): Promise<
   }
   transaction = claimed;
 
-  const provider = getVtuProvider();
+  const provider = getVtuProviderByKey(transaction.provider);
   let result: ProviderPurchaseResult;
   try {
+    provider.assertCanPurchase(transaction.service);
     const storedRequest = transaction.metadata?.providerRequest as ProviderPurchaseRequest | undefined;
     if (!storedRequest) {
       throw new Error('Stored provider request is missing');
@@ -476,7 +506,7 @@ export async function purchaseAirtime(
   const network = input.network.toUpperCase();
   const phone = normalizePhone(input.phone);
   const quote = await quoteAirtime(network, input.amountMinor);
-  const provider = getVtuProvider();
+  const provider = getVtuProviderForService('AIRTIME');
   const requestHash = hashRequestPayload({ service: 'AIRTIME', network, phone, amountMinor: input.amountMinor, version: 1 });
   return createPurchase(
     actor,
@@ -518,7 +548,7 @@ export async function purchaseData(
   if (plan.sellingPriceMinor < limits.dataMinMinor || plan.sellingPriceMinor > limits.dataMaxMinor) {
     throw AppError.badRequest('This data plan is outside the allowed purchase limits', 'AMOUNT_OUT_OF_RANGE');
   }
-  const provider = getVtuProvider();
+  const provider = getVtuProviderForService('DATA');
   const requestHash = hashRequestPayload({
     service: 'DATA',
     network,
@@ -573,7 +603,8 @@ export async function purchaseElectricity(
   const disco = input.disco.toUpperCase();
   const meterNumber = input.meterNumber.replace(/\s/g, '');
   if (!/^\d{10,13}$/.test(meterNumber)) throw AppError.badRequest('Meter number must be 10–13 digits', 'INVALID_METER');
-  const provider = getVtuProvider();
+  const provider = getVtuProviderForService('ELECTRICITY');
+  provider.assertCanPurchase('ELECTRICITY');
   const discoPlan = await ServicePlan.findOne({
     service: 'ELECTRICITY',
     providerPlanId: disco,
@@ -665,10 +696,12 @@ export async function purchaseCable(
   if (!/^\d{8,12}$/.test(smartcardNumber)) {
     throw AppError.badRequest('Smartcard/decoder number must be 8–12 digits', 'INVALID_SMARTCARD');
   }
+  const provider = getVtuProviderForService('CABLE');
+  provider.assertCanPurchase('CABLE');
   const network = await ServicePlan.findOne({
     service: 'CABLE',
     providerPlanId: `__NETWORK__:${cableProvider}`,
-    provider: getVtuProvider().key,
+    provider: provider.key,
     enabled: true,
   }).lean();
   if (!network) throw AppError.badRequest('Cable provider is not available', 'INVALID_CABLE_PROVIDER');
@@ -679,7 +712,6 @@ export async function purchaseCable(
     throw AppError.badRequest('Invalid cable package', 'INVALID_PLAN');
   }
   const pricing = await getSetting('pricing');
-  const provider = getVtuProvider();
   const requestHash = hashRequestPayload({
     service: 'CABLE',
     cableProvider,
@@ -863,7 +895,7 @@ export async function checkProviderStatus(actor: Actor, reference: string) {
   if (!transaction.providerSubmittedAt) {
     throw AppError.conflict('This transaction was never submitted to the provider. Approve or reject the review instead.', 'NOT_SUBMITTED');
   }
-  const provider = getVtuProvider();
+  const provider = getVtuProviderByKey(transaction.provider);
   let result: ProviderStatusResult;
   try {
     result = await provider.queryStatus(transaction.reference);
@@ -923,7 +955,7 @@ export async function getDashboardSummary(userId: string) {
       failed: (statusMap.FAILED ?? 0) + (statusMap.REFUNDED ?? 0),
     },
     monthlyActivity: monthly.map((m) => ({ date: m._id, amountMinor: m.amountMinor })),
-    provider: { isSandbox: provider.isSandbox, key: provider.key },
+    provider: { isSandbox: provider.isSandbox },
   };
 }
 

@@ -300,9 +300,12 @@ export function parseSmeDataPlans(body: unknown): ProviderDataPlan[] {
     plans.push({
       providerPlanId: id,
       network,
-      name: type ? `${volume} · ${type}` : volume,
+      // Keep the provider family in planType for grouping. The display name is
+      // the bundle volume only, so provider branding never leaks to customers.
+      name: volume,
       dataVolume: volume,
       validity,
+      planType: type || undefined,
       costMinor: nairaToMinor(cost),
     });
   }
@@ -374,6 +377,12 @@ export class SmeApiProvider implements VtuProvider {
   readonly key = 'sme';
   readonly name = 'SME API';
   readonly isSandbox = false;
+  readonly supportedServices = ['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as const;
+
+  assertCanPurchase(): void {
+    // SME is a live, contracted provider. Individual service availability is
+    // enforced by its catalogue (cable/electricity IDs are config-driven).
+  }
 
   private readonly client: AxiosInstance;
   private readonly catalogue: SmeCatalogueConfig;
@@ -382,7 +391,7 @@ export class SmeApiProvider implements VtuProvider {
   constructor() {
     if (!env.VTU_API_BASE_URL || !env.VTU_API_KEY) {
       throw AppError.serviceUnavailable(
-        'SME API is not configured. Set VTU_API_BASE_URL and VTU_API_KEY.',
+        'The selected VTU provider is not configured.',
         'VTU_NOT_CONFIGURED'
       );
     }
@@ -412,7 +421,10 @@ export class SmeApiProvider implements VtuProvider {
         },
         'SME API request failed'
       );
-      throw AppError.serviceUnavailable('SME API could not be reached.', 'VTU_UNAVAILABLE');
+      throw AppError.serviceUnavailable(
+        'The VTU service is temporarily unavailable. Please try again.',
+        'VTU_UNAVAILABLE'
+      );
     }
   }
 
@@ -481,7 +493,7 @@ export class SmeApiProvider implements VtuProvider {
       return {
         valid: false,
         isSandbox: false,
-        message: 'This electricity provider is not configured for the live SME API account.',
+        message: 'This electricity provider is not available.',
       };
     }
 
@@ -534,7 +546,7 @@ export class SmeApiProvider implements VtuProvider {
       return {
         valid: false,
         isSandbox: false,
-        message: 'This cable provider is not configured for the live SME API account.',
+        message: 'This cable provider is not available.',
       };
     }
 
@@ -667,7 +679,7 @@ export class SmeApiProvider implements VtuProvider {
       const phone = toSmePhone(request.phone);
       const planId = request.planCode ?? request.packageCode;
       if (!planId || !/^\d+$/.test(String(planId))) {
-        throw AppError.badRequest('A valid SME data plan ID is required', 'INVALID_PLAN');
+        throw AppError.badRequest('A valid data plan is required.', 'INVALID_PLAN');
       }
       return this.executePurchase(
         PATHS.data,
@@ -755,7 +767,8 @@ export class SmeApiProvider implements VtuProvider {
           outcome: 'UNCERTAIN',
           providerReference: reference,
           providerStatus: 'NOT_FOUND',
-          message: 'SME API has no record of this reference yet. Funds remain reserved for manual reconciliation.',
+          message:
+            'The provider has no record of this reference yet. Funds remain reserved for manual reconciliation.',
           raw: sanitizeProviderPayload(responseBody),
         };
       }
@@ -768,7 +781,7 @@ export class SmeApiProvider implements VtuProvider {
           raw: sanitizeProviderPayload(responseBody),
         };
       }
-      throw AppError.serviceUnavailable('SME API status check failed. Try again later.', 'STATUS_CHECK_FAILED');
+      throw AppError.serviceUnavailable('Status check failed. Try again later.', 'STATUS_CHECK_FAILED');
     }
   }
 

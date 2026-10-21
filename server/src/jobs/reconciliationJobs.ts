@@ -1,5 +1,5 @@
 import { LedgerEntry, Transaction, WalletFunding } from '../models';
-import { getVtuProvider } from '../providers';
+import { getVtuProviderByKey } from '../providers';
 import { getPaymentProvider } from '../providers/paymentIndex';
 import { applyProviderOutcome } from '../services/purchaseService';
 import { confirmFunding } from '../services/fundingService';
@@ -21,7 +21,6 @@ export async function reconcileTransactions(limit = 25) {
 
   let checked = 0;
   let resolved = 0;
-  const provider = getVtuProvider();
 
   for (const transaction of due) {
     checked += 1;
@@ -30,6 +29,7 @@ export async function reconcileTransactions(limit = 25) {
         { _id: transaction._id },
         { $inc: { reconciliationAttempts: 1 }, $set: { reconciledAt: new Date() } }
       );
+      const provider = getVtuProviderByKey(transaction.provider);
       const result = await provider.queryStatus(transaction.reference);
       const updated = await applyProviderOutcome(
         String(transaction.userId),

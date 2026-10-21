@@ -104,7 +104,7 @@ export function AdminProvidersPage() {
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader title="Active VTU adapter" description="The adapter used for every purchase" />
+          <CardHeader title="Primary VTU adapter" description="Default adapter; each service can be routed to a different provider" />
           <div className="p-5">
             {providersQuery.isLoading ? (
               <div className="space-y-3">
@@ -131,7 +131,30 @@ export function AdminProvidersPage() {
                   items={[
                     { label: 'Adapter key', value: <span className="font-mono text-xs">{data.activeVtu.key}</span> },
                     { label: 'Environment', value: data.activeVtu.isSandbox ? 'Sandbox — simulated fulfilment' : 'Live — real fulfilment' },
-                    { label: 'Order routing', value: 'All purchases use this adapter.' },
+                    {
+                      label: 'Service routes',
+                      value: (
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(data.routes).map(([service, key]) => (
+                            <Badge key={service} tone="neutral">
+                              {service}: {key}
+                            </Badge>
+                          ))}
+                        </div>
+                      ),
+                    },
+                    {
+                      label: 'Configured adapters',
+                      value: (
+                        <div className="flex flex-wrap gap-1.5">
+                          {data.configuredVtu.map((provider) => (
+                            <Badge key={provider.key} tone={provider.configured ? 'brand' : 'danger'}>
+                              {provider.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ),
+                    },
                   ]}
                 />
               </>

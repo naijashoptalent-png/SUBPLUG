@@ -15,7 +15,7 @@ export function useServices() {
   return useQuery({
     queryKey: queryKeys.services,
     queryFn: () =>
-      getData<{ services: ServiceSummary[]; provider: { key: string; name: string; isSandbox: boolean } }>(
+      getData<{ services: ServiceSummary[]; provider: { isSandbox: boolean } }>(
         '/services'
       ),
     staleTime: 5 * 60_000,
