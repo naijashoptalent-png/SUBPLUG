@@ -128,15 +128,16 @@ export function NotificationsPage() {
                 const Icon = config.icon;
                 return (
                   <li key={item._id} className={cn('relative', !item.readAt && 'bg-brand-500/[0.03]')}>
-                    <button
-                      type="button"
-                      onClick={() => openNotification(item)}
-                      className="flex w-full items-start gap-3 px-5 py-4 text-left transition hover:bg-surface"
-                    >
+                    <div className="flex items-start gap-3 px-5 py-4 transition hover:bg-surface">
                       <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl', config.classes)}>
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <div className="min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => openNotification(item)}
+                        className="min-w-0 flex-1 text-left"
+                        aria-label={item.link ? `Open notification: ${item.title}` : `Mark notification as read: ${item.title}`}
+                      >
                         <div className="flex flex-wrap items-center gap-2">
                           <p className={cn('text-sm', item.readAt ? 'font-medium text-ink' : 'font-semibold text-ink')}>
                             {item.title}
@@ -149,28 +150,21 @@ export function NotificationsPage() {
                         <p className="mt-1.5 text-[10px] uppercase tracking-wider text-subtle">
                           {config.label} · {formatRelative(item.createdAt)}
                         </p>
-                      </div>
+                      </button>
                       {!item.readAt ? (
-                        <span
-                          role="button"
-                          tabIndex={0}
+                        <button
+                          type="button"
                           onClick={(event) => {
                             event.stopPropagation();
                             void markRead.mutate(item._id);
                           }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              void markRead.mutate(item._id);
-                            }
-                          }}
-                          className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-semibold text-brand-700 transition hover:bg-brand-500/10 dark:text-brand-300"
+                          disabled={markRead.isPending}
+                          className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-semibold text-brand-700 transition hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-brand-300"
                         >
                           Mark read
-                        </span>
+                        </button>
                       ) : null}
-                    </button>
+                    </div>
                   </li>
                 );
               })}

@@ -36,7 +36,7 @@ export const queryKeys = {
   summary: ['purchases', 'summary'] as const,
   purchases: (params: Record<string, unknown>) => ['purchases', params] as const,
   purchase: (reference: string) => ['purchases', 'detail', reference] as const,
-  notifications: (page: number) => ['notifications', page] as const,
+  notifications: (page: number, limit = 20) => ['notifications', page, limit] as const,
   referrals: ['referrals'] as const,
   tickets: (page: number) => ['support', 'tickets', page] as const,
   ticket: (id: string) => ['support', 'ticket', id] as const,

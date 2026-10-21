@@ -127,6 +127,6 @@ function invalidatePurchaseData(queryClient: ReturnType<typeof useQueryClient>) 
   void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
   void queryClient.invalidateQueries({ queryKey: queryKeys.summary });
   void queryClient.invalidateQueries({ queryKey: ['purchases'] });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.notifications(1) });
+  void queryClient.invalidateQueries({ queryKey: ['notifications'] });
   void queryClient.invalidateQueries({ queryKey: queryKeys.referrals });
 }
