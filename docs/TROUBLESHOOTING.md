@@ -92,7 +92,11 @@ Set both `VTU_API_BASE_URL=https://smeapi.com.ng` and a valid `VTU_API_KEY` in `
 
 ### Cable or electricity is disabled
 
-Expected until confirmed numeric provider/plan IDs are configured. Add them to `VTU_CATALOGUE_FILE` as described in [ENVIRONMENT.md](ENVIRONMENT.md#vtu-provider), restart the API, and run `npm run seed`. Do not guess IDs; a wrong ID can misdirect a real transaction.
+Cable and electricity are fixed to MaskawaSub. Confirm `MASKAWASUB_API_KEY` is set, the adapter is healthy, and MaskawaSub is certified for the service: `MASKAWASUB_LIVE_PURCHASES=true` and the service is present in `MASKAWASUB_CERTIFIED_SERVICES`. Until then the service is intentionally hidden. Do not guess provider or plan IDs.
+
+### A provider route switch fails
+
+The switch endpoint preflights the target adapter and synchronizes data before returning success; a failed preflight or sync restores the previous route. Check the provider health card, the target adapter's key, and the target catalogue. Do not edit the `providerRouting` setting directly; use **Admin → Providers** so the catalogue stays consistent.
 
 ### A live SME purchase is stuck in `REQUIRES_REVIEW`
 
@@ -224,13 +228,6 @@ Check that `/api/v1/auth/refresh` is reachable and that the `qt_refresh` cookie 
 ### Account locked
 
 Five failed logins lock the account for 15 minutes. Wait, or have an administrator unlock/reset the account according to your support policy. Do not repeatedly retry during the lock window.
-
-### Email verification loop
-
-- In development, `AUTO_VERIFY_EMAILS=true` skips verification.
-- With SMTP unconfigured and `EXPOSE_DEV_EMAILS=true`, use the `devVerificationUrl` returned by registration or resend.
-- In production, configure SMTP and confirm the verification email link points at `CLIENT_URL`.
-- Check the `registration` runtime setting if registration is disabled or verification is required.
 
 ---
 

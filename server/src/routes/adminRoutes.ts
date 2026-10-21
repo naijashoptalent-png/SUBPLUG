@@ -16,6 +16,7 @@ import {
   adminWalletAdjustSchema,
   idParamSchema,
   overviewQuerySchema,
+  providerRouteSwitchSchema,
   referenceParamSchema,
   supportQuerySchema,
   ticketParamSchema,
@@ -48,6 +49,7 @@ router.patch('/plans/:id', requireRole('ADMIN'), validate({ params: idParamSchem
 router.get('/settings', requireRole('ADMIN'), controller.getSettings);
 router.patch('/settings', requireRole('ADMIN'), validate({ body: adminSettingsSchema }), controller.saveSetting);
 router.get('/audit-logs', requireRole('ADMIN'), validate({ query: adminAuditQuerySchema }), controller.listAuditLogs);
+router.post('/providers/routing', requireRole('ADMIN'), validate({ body: providerRouteSwitchSchema }), controller.switchProviderRoute);
 router.post('/providers/check', requireRole('ADMIN'), controller.checkProviders);
 router.get('/reconciliation', requireRole('ADMIN'), controller.reconciliation);
 

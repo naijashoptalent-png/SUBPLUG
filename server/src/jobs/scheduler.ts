@@ -2,6 +2,7 @@ import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { env, isProduction } from '../config/env';
 import { logger } from '../config/logger';
+import { loadProviderRouting } from '../providers';
 import { syncCatalogue } from '../services/catalogueService';
 import { runReconciliationCycle, runWalletDriftCheck } from './reconciliationJobs';
 
@@ -13,6 +14,9 @@ let redis: IORedis | null = null;
 async function execute(jobName: string) {
   if (jobName === 'wallet-drift') {
     return runWalletDriftCheck();
+  }
+  if (jobName === 'routing-refresh') {
+    return loadProviderRouting();
   }
   if (jobName === 'catalogue-sync') {
     try {
@@ -73,6 +77,16 @@ async function startBullMq() {
       jobId: 'catalogue-sync-repeat',
     }
   );
+  await queue.add(
+    'routing-refresh',
+    {},
+    {
+      repeat: { every: 15_000 },
+      removeOnComplete: 5,
+      removeOnFail: 5,
+      jobId: 'routing-refresh-repeat',
+    }
+  );
   logger.info(
     { redis: env.REDIS_URL.replace(/\/\/.*@/, '//***@'), catalogueSyncIntervalMs: env.CATALOGUE_SYNC_INTERVAL_MS },
     'BullMQ scheduler started'
@@ -111,7 +125,13 @@ export async function startScheduler() {
     );
   }, env.CATALOGUE_SYNC_INTERVAL_MS);
   catalogueTimer.unref();
-  timers = [initial, reconcileTimer, driftTimer, catalogueTimer];
+  const routingTimer = setInterval(() => {
+    loadProviderRouting().catch((error) =>
+      logger.error({ err: error }, 'Scheduled provider routing refresh failed')
+    );
+  }, 15_000);
+  routingTimer.unref();
+  timers = [initial, reconcileTimer, driftTimer, catalogueTimer, routingTimer];
   logger.info(
     { intervalMs: env.RECONCILE_INTERVAL_MS, catalogueSyncIntervalMs: env.CATALOGUE_SYNC_INTERVAL_MS },
     'In-process reconciliation scheduler started'

@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleDollarSign,
-  MailCheck,
   Phone,
   ShieldCheck,
   UserRound,
@@ -222,14 +221,6 @@ export function AdminUserDetailPage() {
                     { label: 'Phone', value: data.user.phone },
                     { label: 'User ID', value: <span className="font-mono text-xs">{data.user.id}</span>, mono: true },
                     { label: 'Referral code', value: <span className="font-mono text-xs">{data.user.referralCode}</span> },
-                    {
-                      label: 'Email verification',
-                      value: data.user.emailVerified ? (
-                        <Badge tone="success"><MailCheck className="h-3 w-3" aria-hidden="true" /> Verified</Badge>
-                      ) : (
-                        <Badge tone="warning">Unverified</Badge>
-                      ),
-                    },
                     {
                       label: 'Two-factor',
                       value: data.user.twoFactorEnabled ? (

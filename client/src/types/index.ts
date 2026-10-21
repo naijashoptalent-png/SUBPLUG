@@ -382,6 +382,40 @@ export interface ProviderInfo {
   errorCount?: number;
 }
 
+export type ServiceRouteKey = 'AIRTIME' | 'DATA' | 'ELECTRICITY' | 'CABLE';
+export type SwitchableProviderKey = 'sme' | 'maskawasub';
+
+export interface ProviderRouteOption {
+  key: SwitchableProviderKey;
+  name: string;
+  configured: boolean;
+  purchasable: boolean;
+  reason?: string;
+}
+
+export interface ProviderServiceRoute {
+  service: ServiceRouteKey;
+  current: string;
+  toggleable: boolean;
+  fixed: boolean;
+  purchasable: boolean;
+  options: ProviderRouteOption[];
+}
+
+export interface ProviderRouteSwitchResult {
+  service: 'AIRTIME' | 'DATA';
+  provider: SwitchableProviderKey;
+  previous: SwitchableProviderKey;
+  changed: boolean;
+  purchasable: boolean;
+  routes: Partial<Record<ServiceRouteKey, string>>;
+  serviceRoutes: ProviderServiceRoute[];
+  sync: {
+    counts: Record<string, number>;
+    providers: Array<{ provider: string; services: string[]; errors: string[] }>;
+  } | null;
+}
+
 export interface AuditLog {
   _id: string;
   actorId?: string | null;
@@ -399,10 +433,11 @@ export interface SystemSettings {
   branding: PublicSettings['branding'];
   support: PublicSettings['support'];
   maintenance: { enabled: boolean; message: string; allowAdmins: boolean };
-  registration: { enabled: boolean; requireEmailVerification: boolean; requirePhoneVerification: boolean; allowReferrals: boolean };
+  registration: { enabled: boolean; requirePhoneVerification: boolean; allowReferrals: boolean };
   limits: Record<string, number>;
   discounts: { airtimePercent: Record<string, number>; serviceFeePercent: number };
   pricing: { dataMarkupPercent: number; cableMarkupPercent: number; electricityFeeMinor: number; cableFeeMinor: number; preserveManualPlanPricing: boolean };
+  providerRouting: { airtimeProvider: string; dataProvider: string };
   referrals: { enabled: boolean; rewardMinor: number; qualifyingPurchaseMinor: number; maxReferralsPerUser: number };
   notifications: { emailOnPurchase: boolean; emailOnFunding: boolean; smsOnPurchase: boolean };
 }

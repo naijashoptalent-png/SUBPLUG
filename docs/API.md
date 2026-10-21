@@ -128,8 +128,6 @@ Fetch a new token and retry once.
 | `GET` | `/auth/me` | Access cookie | Profile + wallet projection |
 | `PATCH` | `/auth/me` | Access cookie + CSRF | Update name/phone |
 | `POST` | `/auth/change-password` | Access cookie + CSRF | Change password; revokes sessions |
-| `POST` | `/auth/verify-email` | Public + CSRF | Consume email verification token |
-| `POST` | `/auth/resend-verification` | Public + CSRF | Resend verification email |
 | `POST` | `/auth/forgot-password` | Public + CSRF | Request reset email |
 | `POST` | `/auth/reset-password` | Public + CSRF | Consume reset token |
 | `POST` | `/auth/2fa/setup` | Access cookie + CSRF | Create TOTP secret and QR code |
@@ -165,7 +163,7 @@ Password requirements: 10–128 characters, at least one lowercase, uppercase, d
 }
 ```
 
-In non-production with `EXPOSE_DEV_EMAILS=true`, `devVerificationUrl` may be returned. With `AUTO_VERIFY_EMAILS=true`, registration is immediately verified and `verificationRequired` is `false`.
+Registration creates an account that can be used immediately.
 
 #### Login
 
@@ -629,7 +627,7 @@ All admin routes require an authenticated `SUPPORT` or `ADMIN` user. Mutating an
 | `GET` | `/admin/transactions/:reference` | SUPPORT/ADMIN | Transaction detail incl. provider data |
 | `GET` | `/admin/fundings` | SUPPORT/ADMIN | Search/filter fundings |
 | `GET` | `/admin/plans` | SUPPORT/ADMIN | Catalogue plans |
-| `GET` | `/admin/providers` | SUPPORT/ADMIN | Provider records and health |
+| `GET` | `/admin/providers` | SUPPORT/ADMIN | Provider records, health, routes, and switch options |
 | `GET` | `/admin/support/tickets` | SUPPORT/ADMIN | Ticket queue |
 | `GET` | `/admin/support/tickets/:id` | SUPPORT/ADMIN | Ticket detail |
 | `POST` | `/admin/support/tickets/:id/reply` | SUPPORT/ADMIN | Reply and optionally change status |
@@ -659,7 +657,32 @@ Query filters:
 | `PATCH` | `/admin/settings` | `{ key, value, confirm? }` | Update a runtime setting |
 | `GET` | `/admin/audit-logs` | — | Audit trail with filters |
 | `POST` | `/admin/providers/check` | — | Health-check configured providers |
+| `POST` | `/admin/providers/routing` | `{ service, provider }` | Switch airtime/data route and sync the target catalogue |
 | `GET` | `/admin/reconciliation` | — | Drift, backlog, and reconciliation summary |
+
+#### Provider routing switch
+
+```http
+POST /api/v1/admin/providers/routing
+X-CSRF-Token: …
+
+{
+  "service": "DATA",
+  "provider": "maskawasub"
+}
+```
+
+`service` is `AIRTIME` or `DATA`; `provider` is `sme` or `maskawasub`. The server:
+
+1. verifies the target adapter is configured;
+2. performs a read-only catalogue preflight against the target;
+3. persists the route in the `providerRouting` setting and updates the in-process route;
+4. for data, synchronizes the target catalogue and disables plans belonging to the previous provider;
+5. returns the new route and `purchasable` state.
+
+If the preflight or sync fails, the previous route is restored and the endpoint returns `503`. Airtime needs no catalogue sync because its network list comes from the adapter.
+
+The response also reports `purchasable`. If MaskawaSub has not passed live certification for the selected service, the switch is still allowed for catalogue staging, but the storefront hides that service and purchases fail closed before any debit. Cable and electricity are fixed to MaskawaSub and cannot be switched through this endpoint. Education/exam PINs, airtime-to-cash, and recharge-card PINs are not implemented yet.
 
 #### Wallet adjustment
 

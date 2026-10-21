@@ -444,7 +444,7 @@ export function AdminSettingsPage() {
 
           <SectionCard
             title="Registration"
-            description="Sign-up availability and verification requirements"
+            description="Sign-up availability and referral controls"
             dirty={dirty.has('registration')}
             saving={isSaving('registration')}
             onSave={() => requestSave('registration')}
@@ -459,20 +459,6 @@ export function AdminSettingsPage() {
                   edit('registration', (current) => ({
                     ...current,
                     registration: { ...current.registration, enabled: checked },
-                  }))
-                }
-              />
-            </div>
-            <div className="rounded-2xl border border-line p-4">
-              <Switch
-                id="registration-email"
-                label="Require email verification"
-                description="New accounts must verify their email before signing in."
-                checked={draft.registration.requireEmailVerification}
-                onCheckedChange={(checked) =>
-                  edit('registration', (current) => ({
-                    ...current,
-                    registration: { ...current.registration, requireEmailVerification: checked },
                   }))
                 }
               />

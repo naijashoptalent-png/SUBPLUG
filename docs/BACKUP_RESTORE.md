@@ -13,7 +13,7 @@ This runbook covers logical backups, managed point-in-time recovery, restore dri
 | MongoDB database | Users, wallets, ledger, transactions, fundings, tickets, settings, audit logs | Atlas continuous backup / `mongodump` / volume snapshot |
 | API secrets and environment | Required to run the restored system | Secret manager export under access control |
 | Client build artifacts | Reproducible rollback | CI artifact storage / release registry |
-| Provider configuration | Payment/VTU credentials, webhook URLs, `VTU_CATALOGUE_FILE` mappings | Encrypted configuration repository or runbook |
+| Provider configuration | Payment/VTU credentials, webhook URLs, the runtime `providerRouting` setting, and any legacy `VTU_CATALOGUE_FILE` mapping | Encrypted configuration repository or runbook |
 | TLS certificates and DNS records | Service continuity | Certificate manager / infrastructure-as-code |
 | Audit exports | Investigation and compliance | Periodic encrypted export if retention exceeds database policy |
 

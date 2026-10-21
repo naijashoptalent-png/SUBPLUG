@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail';
 import { maintenanceGuard } from '../middleware/maintenance';
 import { financialLimiter } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
@@ -21,7 +20,7 @@ router.get('/', validate({ query: transactionQuerySchema }), controller.listPurc
 router.get('/summary', controller.dashboardSummary);
 router.get('/:reference', validate({ params: referenceParamSchema }), controller.getPurchase);
 
-router.use(requireVerifiedEmail, maintenanceGuard, financialLimiter);
+router.use(maintenanceGuard, financialLimiter);
 router.post('/airtime', validate({ body: airtimePurchaseSchema }), controller.buyAirtime);
 router.post('/data', validate({ body: dataPurchaseSchema }), controller.buyData);
 router.post('/electricity', validate({ body: electricityPurchaseSchema }), controller.payElectricity);

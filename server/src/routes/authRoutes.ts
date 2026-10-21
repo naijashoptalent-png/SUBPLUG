@@ -6,13 +6,11 @@ import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
-  resendVerificationSchema,
   resetPasswordSchema,
   twoFactorCodeSchema,
   twoFactorDisableSchema,
   twoFactorLoginSchema,
   updateProfileSchema,
-  verifyEmailSchema,
 } from '../validators/schemas';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimit';
 import { authenticate } from '../middleware/auth';
@@ -27,8 +25,6 @@ router.post('/2fa/login', authLimiter, validate({ body: twoFactorLoginSchema }),
 router.post('/refresh', controller.refresh);
 router.post('/logout', authenticate, controller.logout);
 
-router.post('/verify-email', authLimiter, validate({ body: verifyEmailSchema }), controller.verifyEmail);
-router.post('/resend-verification', passwordResetLimiter, validate({ body: resendVerificationSchema }), controller.resendVerification);
 router.post('/forgot-password', passwordResetLimiter, validate({ body: forgotPasswordSchema }), controller.forgotPassword);
 router.post('/reset-password', passwordResetLimiter, validate({ body: resetPasswordSchema }), controller.resetPassword);
 

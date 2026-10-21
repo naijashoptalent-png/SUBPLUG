@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail';
 import { maintenanceGuard } from '../middleware/maintenance';
 import { financialLimiter } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
@@ -22,7 +21,6 @@ router.post(
 );
 router.post(
   '/fund',
-  requireVerifiedEmail,
   maintenanceGuard,
   financialLimiter,
   validate({ body: fundWalletSchema }),

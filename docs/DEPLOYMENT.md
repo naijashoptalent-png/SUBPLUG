@@ -137,8 +137,19 @@ ALLOW_MOCK_VTU=false
 VTU_API_BASE_URL=https://smeapi.com.ng
 VTU_API_KEY=<key>
 VTU_TIMEOUT_MS=15000
-# Cable/electricity only. Populate with confirmed numeric IDs, never guesses.
-VTU_CATALOGUE_FILE=server/config/vtu-catalogue.json
+# Airtime/data can also be switched at runtime from Admin → Providers.
+VTU_AIRTIME_PROVIDER=
+VTU_DATA_PROVIDER=
+# Cable/electricity are fixed to MaskawaSub. The SME catalogue file is legacy
+# and is not used for customer cable/electricity purchases.
+VTU_CABLE_PROVIDER=maskawasub
+VTU_ELECTRICITY_PROVIDER=maskawasub
+VTU_CATALOGUE_FILE=
+
+MASKAWASUB_API_BASE_URL=https://maskawasub.com
+MASKAWASUB_API_KEY=<key>
+MASKAWASUB_LIVE_PURCHASES=false
+MASKAWASUB_CERTIFIED_SERVICES=
 
 USE_QUEUES=true
 REDIS_URL=rediss://default:PASSWORD@redis.example.com:6379
@@ -152,7 +163,6 @@ EMAIL_SECURE=false
 EMAIL_USER=<smtp-user>
 EMAIL_PASSWORD=<smtp-password>
 EXPOSE_DEV_EMAILS=false
-AUTO_VERIFY_EMAILS=false
 
 LOG_LEVEL=info
 RATE_LIMIT_WINDOW_MS=900000
@@ -161,7 +171,7 @@ AUTH_RATE_LIMIT_MAX=20
 TRANSACTION_EMAIL_ALERTS=true
 ```
 
-Airtime and data work with the SME API base URL and key. Cable and electricity stay disabled until confirmed numeric provider/plan IDs are added to `VTU_CATALOGUE_FILE`. See [ENVIRONMENT.md](ENVIRONMENT.md#vtu-provider) for the file schema and every variable.
+Airtime and data work with the SME API base URL and key. Airtime and data routes can be switched from **Admin → Providers**; a data switch preflights and synchronizes the selected catalogue. Cable and electricity are fixed to MaskawaSub and stay hidden until MaskawaSub is certified for live purchases. See [ENVIRONMENT.md](ENVIRONMENT.md#vtu-provider) for every variable.
 
 See [ENVIRONMENT.md](ENVIRONMENT.md) for descriptions and validation rules.
 
@@ -374,7 +384,7 @@ Notes:
 1. Set `VTU_PROVIDER=sme`, `VTU_API_BASE_URL=https://smeapi.com.ng`, and a server-side-only `VTU_API_KEY`.
 2. Confirm `/api/user/` through the admin provider health check and note the provider wallet balance.
 3. Run `npm run seed` and verify the live data-plan count, networks, costs, and customer prices.
-4. Confirm cable/electricity IDs in the SME API account, add them to `VTU_CATALOGUE_FILE`, and sync again. Never guess IDs.
+4. Confirm the airtime/data routes in **Admin → Providers**. A data switch must report a successful catalogue sync; a failed preflight or sync rolls the route back. Cable and electricity are MaskawaSub-only and are certified separately.
 5. Make a low-value live airtime purchase to a controlled number with explicit approval, then verify:
    - the provider reference and delivery;
    - exactly one wallet debit and ledger entry;
@@ -388,7 +398,7 @@ Notes:
 1. Put `MASKAWASUB_API_KEY` in the server environment only. Never place it in a `VITE_*` variable or commit it.
 2. Confirm the read-only catalogue through the admin provider health check. The adapter reads `GET /api/user/` and `GET /api/disco/`; it deliberately does not read `/api/history/` or `/api/sms/`.
 3. Keep `MASKAWASUB_LIVE_PURCHASES=false` and `MASKAWASUB_CERTIFIED_SERVICES=` empty until the provider has confirmed, in writing or through a funded certification, the exact request fields and per-reference status contract for each service.
-4. Do not enable MaskawaSub cable, electricity, airtime, or data for customers before that certification. `VTU_CABLE_PROVIDER=maskawasub`, `VTU_ELECTRICITY_PROVIDER=maskawasub`, `VTU_AIRTIME_PROVIDER=maskawasub`, and `VTU_DATA_PROVIDER=maskawasub` may be used to stage a route, but `listServices` hides any service whose provider is not certified for live purchases.
+4. Do not enable MaskawaSub cable, electricity, airtime, or data for customers before that certification. Airtime and data can be staged or switched from **Admin → Providers**; the switch preflights the target adapter, synchronizes data plans, and restores the previous route if the catalogue cannot be confirmed. Cable and electricity are always MaskawaSub and have no SME fallback. `listServices` still hides any service whose provider is not certified for live purchases.
 5. Certify one service at a time with a controlled low-value purchase. After the service passes, set `MASKAWASUB_CERTIFIED_SERVICES` to **only** that service (for example `CABLE`) and set `MASKAWASUB_LIVE_PURCHASES=true`:
    - submit the purchase and record the provider reference;
    - confirm exactly one wallet debit;
@@ -438,12 +448,12 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 
 - [ ] HTTPS enforced on web and API.
 - [ ] `JWT_ACCESS_SECRET` is random, unique, and not the placeholder.
-- [ ] `NODE_ENV=production`, `AUTO_VERIFY_EMAILS=false`, `EXPOSE_DEV_EMAILS=false`.
+- [ ] `NODE_ENV=production`, `EXPOSE_DEV_EMAILS=false`.
 - [ ] `ALLOW_SANDBOX_IN_PRODUCTION` is unset or `false`.
 - [ ] `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=sme`.
 - [ ] `VTU_API_KEY` is stored only in the server environment and has been rotated if exposed.
 - [ ] `MASKAWASUB_API_KEY` is server-only; `MASKAWASUB_LIVE_PURCHASES=false` and `MASKAWASUB_CERTIFIED_SERVICES=` unless that exact service has passed certification.
-- [ ] Per-service routes (`VTU_AIRTIME_PROVIDER`, `VTU_DATA_PROVIDER`, `VTU_CABLE_PROVIDER`, `VTU_ELECTRICITY_PROVIDER`, etc.) point only at certified providers.
+- [ ] The runtime airtime/data route in **Admin → Providers** points only at a provider certified for that service. Cable and electricity are fixed to MaskawaSub; confirm their certification separately.
 - [ ] CORS contains only intended origins.
 - [ ] Cookies have correct domain, SameSite, and Secure attributes.
 - [ ] MongoDB/Redis are not publicly reachable.

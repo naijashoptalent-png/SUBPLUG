@@ -147,9 +147,7 @@ export function AdminUsersPage() {
                       <td><Badge tone={user.status === 'ACTIVE' ? 'success' : user.status === 'SUSPENDED' ? 'danger' : 'neutral'}>{user.status}</Badge></td>
                       <td>
                         <p className="max-w-[220px] truncate text-xs text-ink">{user.email}</p>
-                        <p className="mt-0.5 text-[10px] text-subtle">
-                          {user.emailVerifiedAt ? 'Verified' : 'Unverified'}
-                        </p>
+                        <p className="mt-0.5 text-[10px] text-subtle">Account email</p>
                       </td>
                       <td className="whitespace-nowrap text-xs text-muted">{formatDate(user.createdAt)}</td>
                       <td className="whitespace-nowrap text-xs text-muted">

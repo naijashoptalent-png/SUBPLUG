@@ -2,7 +2,7 @@
 
 SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platform for selling airtime, data bundles, electricity tokens, and cable TV subscriptions in Nigeria. It includes a customer wallet, an append-only financial ledger, verified payment webhooks, provider adapters, a support desk, referrals, a staff/admin portal, and automated tests.
 
-> **Provider modes are explicit.** The VTU adapter is configured for the live SME API (`VTU_PROVIDER=sme`). Airtime and data purchases are sent to that provider and can deliver real services. Wallet funding still uses the mock payment gateway until Paystack credentials are supplied, so **do not treat test wallet funds as real money**. Cable and electricity stay disabled until the numeric provider/plan IDs enabled on the SME API account are added to `VTU_CATALOGUE_FILE`. Complete the production checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) before accepting customers.
+> **Provider modes are explicit.** Airtime and data currently use the live SME API and can be switched to MaskawaSub from **Admin → Providers**; the switch preflights and synchronizes the selected data catalogue. Cable and electricity are fixed to MaskawaSub and stay hidden until MaskawaSub passes live certification for those services. MaskawaSub purchases are fail-closed while `MASKAWASUB_LIVE_PURCHASES=false` or the service is missing from `MASKAWASUB_CERTIFIED_SERVICES`. Wallet funding still uses the mock payment gateway until Paystack credentials are supplied, so **do not treat test wallet funds as real money**. Complete the production checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) before accepting customers.
 
 ---
 
@@ -25,7 +25,7 @@ SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platfor
 
 ### Customer experience
 
-- Registration, login, email verification, password reset, optional TOTP two-factor authentication.
+- Registration, login, password reset, optional TOTP two-factor authentication.
 - Wallet funded through a hosted checkout flow. The mock gateway is used only until live Paystack keys are configured.
 - Airtime purchase with quote preview; network discounts apply in sandbox mode, while live SME purchases charge face value.
 - Data bundle purchase from the live catalogue, grouped into customer-friendly Standard, Corporate, Gifting, Coupon, and Share categories without exposing the provider name.
@@ -43,7 +43,7 @@ SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platfor
 - User search, account suspension, wallet adjustments with mandatory reasons.
 - Transaction search and detail views, provider status re-checks, manual review approval/rejection.
 - Funding search and re-verification.
-- Plan catalogue management and provider health checks.
+- Plan catalogue management, provider health checks, and audited airtime/data route switching with automatic catalogue sync.
 - Reconciliation view for wallet/ledger drift, stuck transactions, and failed refunds.
 - Support ticket queue with replies and status changes.
 - Immutable audit log for sensitive actions.
@@ -166,7 +166,7 @@ VTU_CATALOGUE_FILE=
 CATALOGUE_SYNC_INTERVAL_MS=900000
 ```
 
-Keep `VTU_API_KEY` in `server/.env` only. Airtime and data work with the base URL and key; cable/electricity also require the numeric IDs from the provider account (see [Cable and electricity IDs](#cable-and-electricity-ids)). Wallet funding remains on the mock gateway until `PAYMENT_GATEWAY=paystack` and valid Paystack keys are set.
+Keep `VTU_API_KEY` in `server/.env` only. Airtime and data work with the base URL and key. Cable and electricity are MaskawaSub-only and do not use the SME catalogue file. Wallet funding remains on the mock gateway until `PAYMENT_GATEWAY=paystack` and valid Paystack keys are set.
 
 The API validates its environment at boot and refuses to start when required values are missing. See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for every variable.
 
@@ -229,36 +229,17 @@ Provider responses are classified as `SUCCESS`, `FAILED`, `PENDING`, or `UNCERTA
 
 The live adapter currently offers MTN, Glo, and Airtel. 9mobile is intentionally disabled because its numeric network ID has not been confirmed; it will reject a 9mobile request rather than guess. Add it only after provider confirmation and a controlled live test.
 
-### Cable and electricity IDs
+### Airtime and data switching
 
-Cable TV and electricity remain disabled until the numeric IDs enabled on the SME API account are supplied. The adapter does not guess provider or plan IDs.
+Sign in as an administrator, open **Providers & health**, and use the **Service routing** card. Choose **SME API** or **MaskawaSub** for airtime or mobile data. The server validates the target adapter, preflights its catalogue (data only), persists the route in the `providerRouting` setting, and synchronizes the target data plans. If the preflight or sync fails, the previous route is restored.
 
-1. Copy `server/config/vtu-catalogue.example.json` to `server/config/vtu-catalogue.json`.
-2. Add only IDs confirmed in the SME API account/dashboard.
-3. Set `VTU_CATALOGUE_FILE=server/config/vtu-catalogue.json`.
-4. Restart the API and run `npm run seed`.
+Airtime needs no catalogue import because its network list comes from the adapter. There is no automatic failover: a submitted order is never retried on the other provider.
 
-```json
-{
-  "cableProviders": [
-    { "code": "DSTV", "name": "DStv", "providerId": "CONFIRMED_NUMERIC_ID" }
-  ],
-  "cablePackages": [
-    {
-      "providerPlanId": "CONFIRMED_NUMERIC_ID",
-      "network": "DSTV",
-      "name": "DStv Compact",
-      "validity": "1 month",
-      "costNaira": 19000
-    }
-  ],
-  "electricityProviders": [
-    { "code": "IKEDC", "name": "Ikeja Electric", "providerId": "CONFIRMED_NUMERIC_ID" }
-  ]
-}
-```
+MaskawaSub is not certified for live purchases yet. Switching to it is allowed for catalogue staging, but the service is hidden from customers until `MASKAWASUB_LIVE_PURCHASES=true` and that service is listed in `MASKAWASUB_CERTIFIED_SERVICES`. See [MaskawaSub certification](docs/DEPLOYMENT.md#maskawasub-secondary-provider).
 
-Replace every `CONFIRMED_NUMERIC_ID` with a verified value. A wrong numeric ID can send a real transaction to the wrong provider. Airtime, data, and status queries do not need this file.
+### Cable and electricity (MaskawaSub only)
+
+Cable TV and electricity are fixed to MaskawaSub; the SME cable/electricity catalogue is not used. They remain hidden until MaskawaSub is certified for those services. Education/exam PINs, airtime-to-cash, and recharge-card PINs are not implemented; when added they will be MaskawaSub-only.
 
 ### Sandbox VTU (optional)
 
@@ -333,7 +314,7 @@ Serve `client/dist/` from a static host or CDN, with a SPA rewrite to `index.htm
 - Production requires MongoDB as a replica set so wallet mutations are transactional.
 - Use HTTPS. When the API and web app are on different sites, set `COOKIE_SAME_SITE=none` and `COOKIE_DOMAIN` appropriately; this requires secure cookies and HTTPS.
 - Configure `ADDITIONAL_CORS_ORIGINS` only with origins you control.
-- Keep `AUTO_VERIFY_EMAILS=false`, `EXPOSE_DEV_EMAILS=false`, and `ALLOW_SANDBOX_IN_PRODUCTION=false` in production.
+- Keep `EXPOSE_DEV_EMAILS=false` and `ALLOW_SANDBOX_IN_PRODUCTION=false` in production.
 - Rotate Paystack and VTU credentials if they have ever been exposed.
 - Never point production at a database that contains mock-funded wallets. Mock funding creates real ledger entries, and those balances could be spent on live VTU services. Start production on a clean database or remove test credits through an audited migration.
 - Grant `ADMIN` only to staff who need financial authority. `SUPPORT` can read operational data and reply to tickets but cannot move money or change settings.
@@ -354,11 +335,11 @@ Serve `client/dist/` from a static host or CDN, with a SPA rewrite to `index.htm
 
 ## Known limitations
 
-- Cable TV and electricity require numeric provider/plan IDs from the SME API account. They stay disabled until those IDs are added to `VTU_CATALOGUE_FILE`; no IDs are guessed.
+- Cable TV and electricity are fixed to MaskawaSub and stay disabled until MaskawaSub is certified for live purchases. Education/exam PINs, airtime-to-cash, and recharge-card PINs are not implemented; no request schema or provider ID is guessed.
 - The payment integration is production-shaped (initialise, verify, signed webhooks, deduplication) but has only been exercised against the mock provider; certify it against Paystack test and live keys.
 - There is no KYC, AML, sanctions screening, or credit facility. Those are business and regulatory requirements outside this codebase.
 - There is no SMS gateway integration; notification records are in-app only.
 - Transactional email requires SMTP configuration. Without it, development logs email previews instead of sending.
 - The in-process scheduler must not be used with multiple API instances. Enable Redis/BullMQ for horizontal scaling.
 - There is no built-in object storage, dispute evidence upload, or chargeback workflow.
-- Live data prices come from the SME API and can change; the scheduled sync keeps the catalogue fresh, but provider-side price changes between syncs remain a commercial risk. 
+- Live data prices come from the selected provider and can change; the scheduled sync keeps the catalogue fresh, but provider-side price changes between syncs remain a commercial risk.

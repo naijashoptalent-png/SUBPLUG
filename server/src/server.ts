@@ -4,13 +4,16 @@ import { env } from './config/env';
 import { connectDatabase, disconnectDatabase, supportsTransactions } from './config/db';
 import { logger } from './config/logger';
 import { ServicePlan, Provider } from './models';
-import { getConfiguredProviderKeys, getServiceProviderKey, getVtuProviderByKey } from './providers';
+import { getConfiguredProviderKeys, getServiceProviderKey, getVtuProviderByKey, loadProviderRouting } from './providers';
 import { getPaymentProvider } from './providers/paymentIndex';
 import { syncCatalogue } from './services/catalogueService';
 import { startScheduler, stopScheduler } from './jobs/scheduler';
 
 async function bootstrap() {
   await connectDatabase();
+  // Runtime routing is persisted so an admin switch survives a restart. The
+  // environment route remains the fallback when no override has been saved.
+  await loadProviderRouting();
 
   const app = createApp();
   const server = createServer(app);

@@ -128,13 +128,17 @@ In production with `PAYMENT_GATEWAY=mock`, boot fails unless `ALLOW_SANDBOX_IN_P
 | `VTU_TIMEOUT_MS` | `15000` | Outbound request timeout for VTU calls |
 | `VTU_CATALOGUE_FILE` | empty | Optional JSON file with SME cable/electricity numeric IDs enabled on the account |
 | `CATALOGUE_SYNC_INTERVAL_MS` | `900000` | Background catalogue refresh interval, minimum 60 seconds |
-| `VTU_AIRTIME_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
-| `VTU_DATA_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
-| `VTU_CABLE_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
-| `VTU_ELECTRICITY_PROVIDER` | empty | Per-service route. Empty means `VTU_PROVIDER` |
-| `VTU_EDUCATION_PROVIDER` | empty | Reserved for education/exam PINs once an adapter is certified |
-| `VTU_AIRTIME_TO_CASH_PROVIDER` | empty | Reserved for airtime-to-cash once an adapter is certified |
-| `VTU_RECHARGE_CARD_PROVIDER` | empty | Reserved for recharge-card PINs once an adapter is certified |
+| `VTU_AIRTIME_PROVIDER` | empty | Initial airtime route. Empty means `VTU_PROVIDER`; an admin can switch it at runtime |
+| `VTU_DATA_PROVIDER` | empty | Initial data route. Empty means `VTU_PROVIDER`; an admin can switch it at runtime |
+| `VTU_CABLE_PROVIDER` | `maskawasub` | Legacy value. Cable is fixed to MaskawaSub in the provider resolver |
+| `VTU_ELECTRICITY_PROVIDER` | `maskawasub` | Legacy value. Electricity is fixed to MaskawaSub in the provider resolver |
+| `VTU_EDUCATION_PROVIDER` | empty | Reserved for education/exam PINs; when implemented they must be MaskawaSub-only |
+| `VTU_AIRTIME_TO_CASH_PROVIDER` | empty | Reserved; when implemented it must be MaskawaSub-only |
+| `VTU_RECHARGE_CARD_PROVIDER` | empty | Reserved; when implemented it must be MaskawaSub-only |
+
+Airtime and data can be switched between `sme` and `maskawasub` from **Admin → Providers**. The selected routes are stored in the `providerRouting` system setting and override the environment values after the next request; a restart is not required. The switch endpoint validates the target adapter, performs a read-only catalogue preflight, and synchronizes data plans from the selected provider. It never retries a submitted order. Cable and electricity are always MaskawaSub; there is no SME fallback.
+
+`VTU_BACKUP_PROVIDER` keeps an adapter available for health/catalogue checks. It is not a failover mechanism.
 
 The `sme` adapter uses these documented endpoints:
 
@@ -150,7 +154,9 @@ The `sme` adapter uses these documented endpoints:
 | Electricity purchase | `POST /api/electricity/` |
 | Transaction status | `POST /api/status/` |
 
-Airtime and data require only `VTU_API_BASE_URL` and `VTU_API_KEY`. The live adapter currently offers MTN, Glo, and Airtel; 9mobile is disabled until its numeric network ID is confirmed with the provider. Cable and electricity need the numeric provider/plan IDs from the SME API account; the adapter intentionally fails closed without them. Copy `server/config/vtu-catalogue.example.json` to a private file and populate confirmed IDs:
+Airtime and data require only `VTU_API_BASE_URL` and `VTU_API_KEY`. The live adapter currently offers MTN, Glo, and Airtel; 9mobile is disabled until its numeric network ID is confirmed with the provider.
+
+The SME adapter still contains optional cable/electricity catalogue support, but the provider resolver routes both services to MaskawaSub. The `VTU_CATALOGUE_FILE` example below is therefore not used for customer cable/electricity purchases in this deployment. Copy `server/config/vtu-catalogue.example.json` to a private file only if you are maintaining that adapter path directly:
 
 ```json
 {
@@ -211,9 +217,8 @@ The catalogue refresh keeps live data-plan prices and availability current. A fa
 | `EMAIL_USER` | empty | SMTP username |
 | `EMAIL_PASSWORD` | empty | SMTP password |
 | `EXPOSE_DEV_EMAILS` | `false` | Development only: return verification/reset URLs in API responses |
-| `AUTO_VERIFY_EMAILS` | `false` | Development only: mark new accounts verified automatically |
 
-Without SMTP, the API logs email previews in development and logs an error in production; financial workflows continue. Never enable `EXPOSE_DEV_EMAILS` or `AUTO_VERIFY_EMAILS` in production.
+Without SMTP, the API logs password-reset email previews in development and logs an error in production. Never enable `EXPOSE_DEV_EMAILS` in production.
 
 ### Security and operations
 

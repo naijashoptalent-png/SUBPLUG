@@ -63,9 +63,10 @@ const envSchema = z.object({
   // the SME account. Airtime/data/status do not need it.
   VTU_CATALOGUE_FILE: z.string().optional().default(''),
 
-  // Per-service routing. Empty means "use VTU_PROVIDER". A service is only
-  // enabled for customers when its routed provider is configured and certified
-  // for live purchases.
+  // Cable and electricity are fixed to MaskawaSub in the provider resolver.
+  // These values are retained for deployment compatibility but do not select
+  // another provider. Education/airtime-to-cash/recharge-card remain reserved
+  // and, when implemented, must also be MaskawaSub-only.
   VTU_CABLE_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
   VTU_ELECTRICITY_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
   VTU_EDUCATION_PROVIDER: z.enum(['', 'mock', 'sme', 'maskawasub']).default(''),
@@ -97,7 +98,6 @@ const envSchema = z.object({
   EMAIL_USER: z.string().optional().default(''),
   EMAIL_PASSWORD: z.string().optional().default(''),
   EXPOSE_DEV_EMAILS: bool(false),
-  AUTO_VERIFY_EMAILS: bool(false),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   RATE_LIMIT_WINDOW_MS: int(900000, 1000),

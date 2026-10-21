@@ -94,7 +94,7 @@ Errors:
 - A login with TOTP enabled returns a five-minute challenge token instead of auth cookies; `POST /auth/2fa/login` completes the exchange.
 - Password changes and 2FA disable revoke all sessions and clear cookies.
 - Login failures are counted; after five failures the account is locked for 15 minutes.
-- Email verification is required before funding or purchasing, controlled by the `registration` setting and enforced by `requireVerifiedEmail`.
+- Registered accounts can fund wallets and purchase services immediately; account protection is provided by password security, session controls, and optional two-factor authentication.
 
 ### CSRF rules
 
@@ -270,7 +270,7 @@ Sandbox simulation uses the same `confirmFunding` path, so it exercises producti
 - Electricity can apply `pricing.electricityFeeMinor`.
 - Administrators can enable/disable plans, rename them, and override selling prices. `preserveManualPlanPricing` protects manual overrides during catalogue synchronisation.
 - Purchase services re-read the plan and runtime limits at purchase time; the client's displayed price is never trusted.
-- Service plans are isolated by provider key. A successful sync only enables plans for the provider currently routed to that service; plans from another provider are disabled so a stale provider ID cannot be purchased. A provider switch therefore requires a fresh sync.
+- Service plans are isolated by provider key. A successful sync only enables plans for the provider currently routed to that service; plans from another provider are disabled so a stale provider ID cannot be purchased. The admin airtime/data switch performs this sync automatically before returning success, and rolls the route back if the target catalogue cannot be confirmed.
 - A service is only shown as enabled when its routed adapter passes `assertCanPurchase`. An adapter with an uncertified contract (currently MaskawaSub) can still contribute a read-only catalogue and health status, but cannot accept customer funds.
 
 Airtime quotes are available from `GET /services/airtime-quote`, and the purchase response includes `amountMinor`, `discountMinor`, `feeMinor`, and `payableMinor`.
@@ -307,9 +307,11 @@ Three implementations exist:
 - `MaskawaSubProvider` - secondary live adapter. Catalogue reads are confirmed (`/api/user/`, `/api/disco/`, cable plans); live purchase/status contracts are not certified, so `MASKAWASUB_LIVE_PURCHASES=false` makes every purchase fail before the wallet is debited. Even when that global gate is open, only services listed in `MASKAWASUB_CERTIFIED_SERVICES` may purchase; the allowlist defaults to empty and is intended to be populated one service at a time. It reads data-plan IDs, cable IDs, and electricity IDs from the provider account rather than guessing them.
 - `MockVtuProvider` — deterministic sandbox, no network calls, clearly flagged.
 
-Airtime and data use the primary provider by default; they can be routed independently with `VTU_AIRTIME_PROVIDER`/`VTU_DATA_PROVIDER`. Cable and electricity can be routed to MaskawaSub with `VTU_CABLE_PROVIDER`/`VTU_ELECTRICITY_PROVIDER`; SME cable/electricity still require `VTU_CATALOGUE_FILE` with confirmed numeric IDs. Provider plans are isolated by provider key, and stale plans from a previous provider are disabled during sync.
+Airtime and data can switch between SME and MaskawaSub at runtime from **Admin → Providers**, or start from `VTU_AIRTIME_PROVIDER`/`VTU_DATA_PROVIDER`. The runtime route is persisted in the `providerRouting` system setting, refreshed across processes, and applied before the next debit. A data switch preflights the target catalogue and synchronizes it; a failed sync restores the previous route. Airtime networks are adapter-static, so no catalogue import is needed.
 
-Provider selection is resolved per service from configuration. The selected adapter is stored on the transaction, and reconciliation/status checks always use that same adapter. There is no automatic cross-provider retry after submission. Mock adapters are blocked in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true` is explicitly set.
+Cable and electricity are fixed to MaskawaSub; the resolver intentionally ignores `VTU_CABLE_PROVIDER`/`VTU_ELECTRICITY_PROVIDER`. Education/exam PINs, airtime-to-cash, and recharge-card PINs are not implemented; when added they will be MaskawaSub-only. Provider plans are isolated by provider key, and stale plans from a previous provider are disabled during sync.
+
+Provider selection is resolved per service from the runtime route. The selected adapter is stored on the transaction, and reconciliation/status checks always use that same adapter. There is no automatic cross-provider retry after submission. Mock adapters are blocked in production unless `ALLOW_SANDBOX_IN_PRODUCTION=true` is explicitly set.
 
 ### Payment provider
 

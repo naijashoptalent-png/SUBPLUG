@@ -60,6 +60,7 @@ export const SETTING_KEYS = {
   limits: 'limits',
   discounts: 'discounts',
   pricing: 'pricing',
+  providerRouting: 'providerRouting',
   referrals: 'referrals',
   notifications: 'notifications',
 } as const;
@@ -85,7 +86,6 @@ export const DEFAULT_SETTINGS = {
   },
   registration: {
     enabled: true,
-    requireEmailVerification: true,
     requirePhoneVerification: false,
     allowReferrals: true,
   },
@@ -113,6 +113,13 @@ export const DEFAULT_SETTINGS = {
     electricityFeeMinor: 0,
     cableFeeMinor: 0,
     preserveManualPlanPricing: true,
+  },
+  providerRouting: {
+    // Empty means "fall back to the VTU_*_PROVIDER environment value".
+    // Only airtime and data are switchable at runtime; cable and electricity
+    // are fixed to MaskawaSub in the provider resolver.
+    airtimeProvider: '',
+    dataProvider: '',
   },
   referrals: {
     enabled: true,

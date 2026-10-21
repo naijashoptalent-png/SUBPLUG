@@ -55,7 +55,7 @@ export function RegisterPage() {
   const onSubmit = async (values: RegisterForm) => {
     setError(null);
     try {
-      const result = await registerUser({
+      await registerUser({
         ...values,
         referralCode: values.referralCode || undefined,
       });
@@ -64,9 +64,7 @@ export function RegisterPage() {
         replace: true,
         state: {
           email: values.email,
-          message: result.verificationRequired
-            ? 'Account created. Check your email to verify your address, then sign in.'
-            : 'Account created. Sign in to fund your wallet and start using SubPlug.',
+          message: 'Account created. Sign in to fund your wallet and start using SubPlug.',
         },
       });
     } catch (err) {

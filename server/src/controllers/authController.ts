@@ -69,21 +69,6 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   res.json({ data: user });
 });
 
-export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
-  await authService.verifyEmail(req.body.token);
-  res.json({ data: { verified: true } });
-});
-
-export const resendVerification = asyncHandler(async (req: Request, res: Response) => {
-  const result = await authService.resendVerification(req.body.email);
-  res.json({
-    data: {
-      message: 'If this account needs verification, a new email has been sent.',
-      ...(result.devVerificationUrl ? { devVerificationUrl: result.devVerificationUrl } : {}),
-    },
-  });
-});
-
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   const result = await authService.forgotPassword(req.body.email);
   res.json({

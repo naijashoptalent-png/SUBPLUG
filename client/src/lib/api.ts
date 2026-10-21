@@ -107,7 +107,6 @@ function isRefreshableRequest(url: string | undefined) {
     '/auth/csrf',
     '/auth/forgot-password',
     '/auth/reset-password',
-    '/auth/verify-email',
   ].some((path) => url.startsWith(path));
 }
 

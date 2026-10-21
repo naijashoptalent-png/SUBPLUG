@@ -10,7 +10,6 @@ import { env, isProduction } from '../config/env';
 import {
   sendPasswordResetEmail,
   sendSecurityAlert,
-  sendVerificationEmail,
 } from './emailService';
 import { notify } from './notificationService';
 import { getSetting } from './settingsService';
@@ -124,8 +123,6 @@ export async function registerUser(input: RegisterInput, req: Request) {
 
   const passwordHash = await hashPassword(input.password);
   const referralCode = await uniqueReferralCode(input.fullName);
-  const verificationToken = randomToken(32);
-  const autoVerify = !isProduction && env.AUTO_VERIFY_EMAILS;
 
   const user = await runInTransaction(async (session) => {
     const [created] = await User.create(
@@ -137,9 +134,9 @@ export async function registerUser(input: RegisterInput, req: Request) {
           passwordHash,
           referralCode,
           referredBy: referrer?._id ?? null,
-          emailVerifiedAt: autoVerify ? new Date() : null,
-          emailVerificationTokenHash: autoVerify ? null : sha256(verificationToken),
-          emailVerificationExpiresAt: autoVerify ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
+          // Email verification is not part of the sign-up flow. Mark accounts
+          // as active immediately, while retaining the field for existing data.
+          emailVerifiedAt: new Date(),
         },
       ],
       session ? { session } : {}
@@ -161,18 +158,11 @@ export async function registerUser(input: RegisterInput, req: Request) {
     return created;
   });
 
-  const verificationUrl = `${env.CLIENT_URL}/verify-email?token=${verificationToken}`;
-  if (!autoVerify) {
-    await sendVerificationEmail(email, user.fullName, verificationUrl);
-  }
-
   await notify({
     userId: String(user._id),
     type: 'SYSTEM',
     title: 'Welcome to SubPlug',
-    body: autoVerify
-      ? 'Your account is ready. Fund your wallet to make your first purchase.'
-      : 'Verify your email address to start making purchases.',
+    body: 'Your account is ready. Fund your wallet to make your first purchase.',
     link: '/dashboard',
   });
 
@@ -187,48 +177,7 @@ export async function registerUser(input: RegisterInput, req: Request) {
 
   return {
     user: publicUser(user.toObject()),
-    verificationRequired: !autoVerify,
-    devVerificationUrl:
-      !isProduction && env.EXPOSE_DEV_EMAILS && !autoVerify ? verificationUrl : undefined,
   };
-}
-
-export async function resendVerification(emailRaw: string): Promise<{ devVerificationUrl?: string }> {
-  const email = normalizeEmail(emailRaw);
-  const user = await User.findOne({ email }).select('+emailVerificationTokenHash');
-  // Always return a generic response to avoid account enumeration.
-  if (!user || user.emailVerifiedAt) return {};
-
-  const token = randomToken(32);
-  user.emailVerificationTokenHash = sha256(token);
-  user.emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  await user.save();
-
-  const verificationUrl = `${env.CLIENT_URL}/verify-email?token=${token}`;
-  await sendVerificationEmail(user.email, user.fullName, verificationUrl);
-  return { devVerificationUrl: !isProduction && env.EXPOSE_DEV_EMAILS ? verificationUrl : undefined };
-}
-
-export async function verifyEmail(token: string): Promise<void> {
-  const tokenHash = sha256(token);
-  const user = await User.findOne({
-    emailVerificationTokenHash: tokenHash,
-    emailVerificationExpiresAt: { $gt: new Date() },
-  }).select('+emailVerificationTokenHash +emailVerificationExpiresAt');
-
-  if (!user) {
-    throw AppError.badRequest('Verification link is invalid or has expired', 'INVALID_VERIFICATION_TOKEN');
-  }
-  user.emailVerifiedAt = new Date();
-  user.emailVerificationTokenHash = null;
-  user.emailVerificationExpiresAt = null;
-  await user.save();
-  await notify({
-    userId: String(user._id),
-    type: 'SECURITY',
-    title: 'Email verified',
-    body: 'Your email address is now verified. You can make purchases from your wallet.',
-  });
 }
 
 interface LoginResult {

@@ -556,7 +556,10 @@ async function syncProviderCatalogue(
   };
 }
 
-export async function syncCatalogue(actorId?: string) {
+export async function syncCatalogue(
+  actorId?: string,
+  options: { requiredServices?: ServiceType[] } = {}
+) {
   const pricing = await getSetting('pricing');
   const keys = getConfiguredProviderKeys();
   if (!keys.length) throw AppError.serviceUnavailable('No VTU providers are configured.', 'VTU_NOT_CONFIGURED');
@@ -624,19 +627,30 @@ export async function syncCatalogue(actorId?: string) {
     }
   }
 
-  // A provider switch must not leave the previous provider's plans purchasable.
-  for (const service of ['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as ServiceType[]) {
-    await ServicePlan.updateMany(
-      { service, provider: { $ne: getServiceProviderKey(service) }, enabled: true },
-      { $set: { enabled: false, 'metadata.stale': true } }
-    );
-  }
-
   const successful = results.filter((result) => result.services.length > 0);
   if (!successful.length) {
     throw AppError.serviceUnavailable(
       'No VTU provider catalogue could be synchronized. Existing catalogue was left unchanged.',
       'CATALOGUE_SYNC_FAILED'
+    );
+  }
+
+  const syncedServices = new Set(results.flatMap((result) => result.services));
+  const missing = (options.requiredServices ?? []).filter((service) => !syncedServices.has(service));
+  if (missing.length) {
+    throw AppError.serviceUnavailable(
+      `Catalogue sync did not confirm ${missing.join(', ')}. The previous route will be restored.`,
+      'CATALOGUE_SYNC_INCOMPLETE'
+    );
+  }
+
+  // A provider switch must not leave the previous provider's plans purchasable.
+  // Run this only after the required target service has been confirmed, so a
+  // failed switch does not temporarily disable the current catalogue.
+  for (const service of ['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as ServiceType[]) {
+    await ServicePlan.updateMany(
+      { service, provider: { $ne: getServiceProviderKey(service) }, enabled: true },
+      { $set: { enabled: false, 'metadata.stale': true } }
     );
   }
 

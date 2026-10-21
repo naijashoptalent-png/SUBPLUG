@@ -23,8 +23,6 @@ interface LoginResponse {
 
 interface RegisterResponse {
   user: User;
-  verificationRequired: boolean;
-  devVerificationUrl?: string;
 }
 
 interface AuthContextValue {

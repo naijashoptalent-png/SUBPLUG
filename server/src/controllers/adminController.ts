@@ -168,6 +168,16 @@ export const listProviders = asyncHandler(async (_req: Request, res: Response) =
   res.json({ data: await adminService.listProviders() });
 });
 
+export const switchProviderRoute = asyncHandler(async (req: Request, res: Response) => {
+  const data = await adminService.switchProviderRoute(
+    { id: req.user!.id, name: req.user!.name, role: req.user!.role },
+    req.body.service,
+    req.body.provider,
+    req
+  );
+  res.json({ data });
+});
+
 export const checkProviders = asyncHandler(async (req: Request, res: Response) => {
   const data = await adminService.checkProviders(req.user!.id, req.user!.role, req.user!.name, req);
   res.json({ data });

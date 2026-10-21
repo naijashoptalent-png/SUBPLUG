@@ -3,8 +3,17 @@ import { env, isProduction } from '../config/env';
 import { AppError } from '../utils/AppError';
 import { MaskawaSubProvider } from './maskawaSubProvider';
 import { MockVtuProvider } from './mockVtuProvider';
+import { getRoutingOverrides, resolveServiceProviderKey } from './routing';
 import { SmeApiProvider } from './smeApiProvider';
 import { VtuProvider } from './types';
+
+export {
+  isSwitchableService,
+  loadProviderRouting,
+  normaliseSwitchableProvider,
+  setProviderRouting,
+} from './routing';
+export type { SwitchableProvider, SwitchableService } from './routing';
 
 const instances = new Map<string, VtuProvider>();
 let testProvider: VtuProvider | null = null;
@@ -47,16 +56,7 @@ export function getVtuProvider(): VtuProvider {
  */
 export function getServiceProviderKey(service: ServiceType): string {
   if (testProvider) return testProvider.key;
-  const overrides: Record<string, string | undefined> = {
-    AIRTIME: env.VTU_AIRTIME_PROVIDER,
-    DATA: env.VTU_DATA_PROVIDER,
-    ELECTRICITY: env.VTU_ELECTRICITY_PROVIDER,
-    CABLE: env.VTU_CABLE_PROVIDER,
-    EDUCATION: env.VTU_EDUCATION_PROVIDER,
-    AIRTIME_TO_CASH: env.VTU_AIRTIME_TO_CASH_PROVIDER,
-    RECHARGE_CARD: env.VTU_RECHARGE_CARD_PROVIDER,
-  };
-  return overrides[service] || env.VTU_PROVIDER;
+  return resolveServiceProviderKey(service);
 }
 
 export function getVtuProviderForService(service: ServiceType): VtuProvider {
@@ -79,6 +79,12 @@ export function getConfiguredProviderKeys(): string[] {
     env.VTU_EDUCATION_PROVIDER,
     env.VTU_AIRTIME_TO_CASH_PROVIDER,
     env.VTU_RECHARGE_CARD_PROVIDER,
+    ...Object.values(getRoutingOverrides()),
+    // Keep both switchable adapters warm when credentials exist. This makes
+    // health checks useful before a route change and avoids hiding a provider
+    // merely because it is not currently selected.
+    env.VTU_API_KEY ? 'sme' : '',
+    env.MASKAWASUB_API_KEY ? 'maskawasub' : '',
   ].filter(Boolean);
   return [...new Set(keys)];
 }

@@ -19,7 +19,7 @@ const groups = [
       },
       {
         q: 'Do I need to verify my email?',
-        a: 'Email verification is required for wallet funding and purchases when the platform has verification enabled. You can resend the verification email from the sign-in flow if the original link expires.',
+        a: 'You can sign in and fund your wallet immediately after creating your account. For your security, use a strong password and enable two-factor authentication in settings.',
       },
     ],
   },

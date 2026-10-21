@@ -11,8 +11,12 @@ import type {
   Funding,
   Pagination,
   ProviderInfo,
+  ProviderRouteSwitchResult,
+  ProviderServiceRoute,
   ReconciliationResult,
+  ServiceRouteKey,
   SupportTicket,
+  SwitchableProviderKey,
   SystemSettings,
   Transaction,
 } from '@/types';
@@ -123,9 +127,24 @@ export function useAdminProviders() {
         providers: ProviderInfo[];
         activeVtu: { key: string; name: string; isSandbox: boolean };
         configuredVtu: Array<{ key: string; name: string; isSandbox: boolean; configured: boolean }>;
-        routes: Partial<Record<'AIRTIME' | 'DATA' | 'ELECTRICITY' | 'CABLE', string>>;
+        routes: Partial<Record<ServiceRouteKey, string>>;
+        serviceRoutes: ProviderServiceRoute[];
         payment: { key: string; isSandbox: boolean; configured: boolean };
       }>('/admin/providers'),
+  });
+}
+
+export function useSwitchProviderRoute() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { service: 'AIRTIME' | 'DATA'; provider: SwitchableProviderKey }) =>
+      postData<ProviderRouteSwitchResult>('/admin/providers/routing', input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders });
+      void queryClient.invalidateQueries({ queryKey: ['services'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'overview'] });
+    },
   });
 }
 

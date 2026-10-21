@@ -16,18 +16,24 @@ import {
   getServiceProviderKey,
   getVtuProvider,
   getVtuProviderByKey,
+  isSwitchableService,
+  normaliseSwitchableProvider,
+  setProviderRouting,
+  type SwitchableProvider,
+  type SwitchableService,
 } from '../providers';
 import { getPaymentProvider } from '../providers/paymentIndex';
 import { env } from '../config/env';
+import { logger } from '../config/logger';
 import { writeAudit } from './auditService';
 import { adminAdjustWallet } from './walletService';
 import { revokeAllSessions } from './tokenService';
 import { notify } from './notificationService';
 import { sendSecurityAlert } from './emailService';
-import { getAllSettings, updateSetting } from './settingsService';
+import { getAllSettings, getSetting, updateSetting } from './settingsService';
 import { SETTING_KEYS } from '../config/constants';
 import { checkAndConfirmFunding } from './fundingService';
-import { listAdminPlans } from './catalogueService';
+import { isServicePurchasable, listAdminPlans, syncCatalogue } from './catalogueService';
 import { supportsTransactions } from '../config/db';
 
 export async function getOverview(days = 30) {
@@ -287,6 +293,53 @@ export async function listAuditLogs(options: {
   return { logs, pagination: paginationMeta(total, options.page, options.limit) };
 }
 
+const ROUTE_SERVICES = ['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as const;
+
+function providerDisplayName(key: string): string {
+  if (key === 'sme') return 'SME API';
+  if (key === 'maskawasub') return 'MaskawaSub';
+  if (key === 'mock') return 'Sandbox provider';
+  return key;
+}
+
+function buildServiceRoutes() {
+  return ROUTE_SERVICES.map((service) => {
+    const current = getServiceProviderKey(service);
+    const toggleable = isSwitchableService(service);
+    const options = toggleable
+      ? (['sme', 'maskawasub'] as const).map((key) => {
+          let configured = false;
+          let purchasable = false;
+          let name = providerDisplayName(key);
+          let reason: string | undefined;
+          try {
+            const provider = getVtuProviderByKey(key);
+            configured = true;
+            name = provider.name;
+            try {
+              provider.assertCanPurchase(service);
+              purchasable = true;
+            } catch (error) {
+              reason = error instanceof Error ? error.message : 'This provider cannot fulfil the service.';
+            }
+          } catch (error) {
+            reason = error instanceof Error ? error.message : 'This provider is not configured.';
+          }
+          return { key, name, configured, purchasable, reason };
+        })
+      : [];
+
+    return {
+      service,
+      current,
+      toggleable,
+      fixed: !toggleable,
+      purchasable: isServicePurchasable(service),
+      options,
+    };
+  });
+}
+
 export async function listProviders() {
   const [providers, vtu] = await Promise.all([Provider.find().lean(), Promise.resolve(getVtuProvider())]);
   let paymentKey = 'unconfigured';
@@ -307,12 +360,8 @@ export async function listProviders() {
       return { key, name: key, isSandbox: false, configured: false };
     }
   });
-  const routes = Object.fromEntries(
-    (['AIRTIME', 'DATA', 'ELECTRICITY', 'CABLE'] as const).map((service) => [
-      service,
-      getServiceProviderKey(service),
-    ])
-  );
+  const serviceRoutes = buildServiceRoutes();
+  const routes = Object.fromEntries(serviceRoutes.map((route) => [route.service, route.current]));
 
   return {
     providers: providers.map((p) => ({
@@ -330,7 +379,158 @@ export async function listProviders() {
     activeVtu: { key: vtu.key, name: vtu.name, isSandbox: vtu.isSandbox },
     configuredVtu,
     routes,
+    serviceRoutes,
     payment: { key: paymentKey, isSandbox: paymentSandbox, configured: paymentKey !== 'unconfigured' },
+  };
+}
+
+function currentRoutingSetting(): { airtimeProvider: string; dataProvider: string } {
+  const airtime = getServiceProviderKey('AIRTIME');
+  const data = getServiceProviderKey('DATA');
+  // Only persist a live adapter. Anything else (for example the sandbox route
+  // in development) is represented by an empty value so it continues to fall
+  // back to the environment configuration.
+  return {
+    airtimeProvider: normaliseSwitchableProvider(airtime) ?? '',
+    dataProvider: normaliseSwitchableProvider(data) ?? '',
+  };
+}
+
+export async function switchProviderRoute(
+  actor: { id: string; name: string; role: string },
+  service: SwitchableService,
+  provider: SwitchableProvider,
+  req: Request
+) {
+  if (!isSwitchableService(service)) {
+    throw AppError.badRequest('Only airtime and data routes can be switched.', 'ROUTE_NOT_SWITCHABLE');
+  }
+
+  const previous = currentRoutingSetting();
+  const current = service === 'AIRTIME' ? getServiceProviderKey('AIRTIME') : getServiceProviderKey('DATA');
+  if (current === provider) {
+    const serviceRoutes = buildServiceRoutes();
+    return {
+      service,
+      provider,
+      previous: current,
+      changed: false,
+      purchasable: isServicePurchasable(service),
+      routes: Object.fromEntries(serviceRoutes.map((route) => [route.service, route.current])),
+      serviceRoutes,
+      sync: null,
+    };
+  }
+
+  let target;
+  try {
+    target = getVtuProviderByKey(provider);
+  } catch {
+    throw AppError.serviceUnavailable('The selected provider is not configured.', 'VTU_NOT_CONFIGURED');
+  }
+
+  // Prove the target can return the products before committing the route. This
+  // is a read-only provider call; it never creates an order.
+  try {
+    const networks = await target.getNetworks();
+    if (!networks.length) throw new Error('provider returned no networks');
+    if (service === 'DATA') {
+      let planCount = 0;
+      for (const network of networks) {
+        planCount += (await target.getDataPlans(network.code)).length;
+      }
+      if (!planCount) throw new Error('provider returned no data plans');
+    }
+  } catch (error) {
+    logger.error({ err: error, service, provider }, 'Provider route preflight failed');
+    throw AppError.serviceUnavailable(
+      'The selected provider catalogue could not be loaded. The route was not changed.',
+      'PROVIDER_ROUTE_PREFLIGHT_FAILED'
+    );
+  }
+
+  const next = {
+    ...previous,
+    [service === 'AIRTIME' ? 'airtimeProvider' : 'dataProvider']: provider,
+  };
+
+  await updateSetting('providerRouting', next, actor.id);
+  setProviderRouting({
+    AIRTIME: normaliseSwitchableProvider(next.airtimeProvider),
+    DATA: normaliseSwitchableProvider(next.dataProvider),
+  });
+
+  let sync: Awaited<ReturnType<typeof syncCatalogue>> | null = null;
+  try {
+    if (service === 'DATA') {
+      sync = await syncCatalogue(actor.id, { requiredServices: ['DATA'] });
+    }
+  } catch (error) {
+    logger.error({ err: error, service, provider }, 'Provider route switch failed; rolling back');
+    setProviderRouting({
+      AIRTIME: normaliseSwitchableProvider(previous.airtimeProvider),
+      DATA: normaliseSwitchableProvider(previous.dataProvider),
+    });
+    try {
+      await updateSetting('providerRouting', previous, actor.id);
+      await syncCatalogue(actor.id, {
+        requiredServices: service === 'DATA' ? ['DATA'] : [],
+      });
+    } catch (rollbackError) {
+      logger.error({ err: rollbackError, service, provider }, 'Provider route rollback persistence failed');
+    }
+    throw AppError.serviceUnavailable(
+      'The provider switch failed and the previous route was restored.',
+      'PROVIDER_SWITCH_FAILED'
+    );
+  }
+
+  const purchasable = isServicePurchasable(service);
+  const serviceRoutes = buildServiceRoutes();
+  await writeAudit({
+    actorId: actor.id,
+    actorName: actor.name,
+    actorRole: actor.role,
+    action: 'PROVIDER_ROUTE_CHANGED',
+    entityType: 'SystemSetting',
+    entityId: 'providerRouting',
+    metadata: {
+      service,
+      from: current,
+      to: provider,
+      purchasable,
+      synced: sync
+        ? {
+            counts: sync.counts,
+            providers: sync.providers.map((result) => ({
+              provider: result.provider,
+              services: result.services,
+              errors: result.errors,
+            })),
+          }
+        : null,
+    },
+    req,
+  });
+
+  return {
+    service,
+    provider,
+    previous: current,
+    changed: true,
+    purchasable,
+    routes: Object.fromEntries(serviceRoutes.map((route) => [route.service, route.current])),
+    serviceRoutes,
+    sync: sync
+      ? {
+          counts: sync.counts,
+          providers: sync.providers.map((result) => ({
+            provider: result.provider,
+            services: result.services,
+            errors: result.errors,
+          })),
+        }
+      : null,
   };
 }
 
@@ -408,6 +608,12 @@ export async function saveSetting(
 ) {
   if (!Object.values(SETTING_KEYS).includes(key as never)) {
     throw AppError.badRequest('Unknown settings key', 'INVALID_SETTING_KEY');
+  }
+  if (key === 'providerRouting') {
+    throw AppError.badRequest(
+      'Use the provider routing endpoint so the catalogue can be synchronized.',
+      'USE_PROVIDER_ROUTE_ENDPOINT'
+    );
   }
   if (key === 'maintenance' && value.enabled === true) {
     // High-impact action still allowed, but audited with explicit metadata.

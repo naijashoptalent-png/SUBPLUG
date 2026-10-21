@@ -8,7 +8,6 @@ import {
   KeyRound,
   Laptop,
   LockKeyhole,
-  MailCheck,
   ShieldCheck,
   Smartphone,
   UserRound,
@@ -231,16 +230,6 @@ export function SettingsPage() {
                 items={[
                   { label: 'Full name', value: user?.fullName ?? '—' },
                   { label: 'Email', value: user?.email ?? '—' },
-                  {
-                    label: 'Email status',
-                    value: user?.emailVerified ? (
-                      <Badge tone="success">
-                        <MailCheck className="h-3 w-3" aria-hidden="true" /> Verified
-                      </Badge>
-                    ) : (
-                      <Badge tone="warning">Not verified</Badge>
-                    ),
-                  },
                   { label: 'Phone', value: user?.phone ?? '—' },
                   {
                     label: 'Account status',

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LedgerEntry, ServicePlan, Transaction, Wallet } from '../src/models';
 import { getVtuProvider, setVtuProviderForTests } from '../src/providers';
 import { MockVtuProvider } from '../src/providers/mockVtuProvider';
@@ -36,6 +36,12 @@ async function balanceOf(userId: string) {
 function airtimeInput(phone: string, amountMinor = 10_000, idempotencyKey = uniqueReference('air')) {
   return { network: 'MTN', phone, amountMinor, idempotencyKey };
 }
+
+beforeEach(() => {
+  // Keep unit/integration tests on the sandbox adapter even though cable and
+  // electricity are fixed to MaskawaSub in production routing.
+  setVtuProviderForTests(new MockVtuProvider());
+});
 
 afterEach(() => {
   setVtuProviderForTests(null);

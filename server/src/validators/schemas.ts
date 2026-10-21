@@ -43,8 +43,6 @@ export const loginSchema = z.object({
 
 export const refreshSchema = z.object({}).passthrough();
 
-export const verifyEmailSchema = z.object({ token: z.string().min(20).max(200) });
-export const resendVerificationSchema = z.object({ email: emailSchema });
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 export const resetPasswordSchema = z
   .object({
@@ -228,6 +226,11 @@ export const adminSettingsSchema = z.object({
   key: z.string().trim().min(2).max(50),
   value: z.record(z.unknown()),
   confirm: z.string().max(50).optional(),
+});
+
+export const providerRouteSwitchSchema = z.object({
+  service: z.enum(['AIRTIME', 'DATA']),
+  provider: z.enum(['sme', 'maskawasub']),
 });
 
 export const sandboxOutcomeSchema = z.object({
