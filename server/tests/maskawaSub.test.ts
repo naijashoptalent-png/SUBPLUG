@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   normaliseMaskawaCableCode,
+  extractMaskawaErrorMessage,
   normaliseMaskawaOutcome,
   normaliseMaskawaPurchase,
   parseMaskawaCableCatalogue,
@@ -134,6 +135,11 @@ describe('MaskawaSub catalogue parsing', () => {
 });
 
 describe('MaskawaSub response normalisation', () => {
+  it('keeps safe provider validation errors instead of a generic HTTP error', () => {
+    expect(extractMaskawaErrorMessage({ plan: ['A valid plan is required.'] })).toBe('plan: A valid plan is required.');
+    expect(extractMaskawaErrorMessage({ mobile_number: ['Enter a valid number.'] })).toBeUndefined();
+  });
+
   it('does not treat ambiguous or lookup-only responses as success', () => {
     expect(normaliseMaskawaOutcome({ status: 'success', message: 'Airtime delivered' })).toBe('SUCCESS');
     expect(normaliseMaskawaOutcome({ status: 'pending' })).toBe('PENDING');

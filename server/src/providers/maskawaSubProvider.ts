@@ -133,6 +133,30 @@ function extractIdentifier(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * Keeps a compact, safe explanation from a provider validation response.
+ * MaskawaSub commonly returns field-error objects for HTTP 400 responses;
+ * without this, customers only see Axios's generic status-code message.
+ */
+export function extractMaskawaErrorMessage(value: unknown): string | undefined {
+  const root = asRecord(sanitizeProviderPayload(value));
+  const direct = firstDefined(root.message, root.msg, root.detail, root.error);
+  if (typeof direct === 'string' && direct.trim()) return direct.trim().slice(0, 300);
+
+  const nestedErrors = asRecord(firstDefined(root.errors, root.error, root.data));
+  const errors = Object.keys(nestedErrors).length ? nestedErrors : root;
+  const parts: string[] = [];
+  for (const [field, raw] of Object.entries(errors)) {
+    // Never surface authentication or recipient identifiers in transaction
+    // history/logs, even if the upstream API echoes them in an error response.
+    if (/(token|key|auth|password|pin|phone|mobile|email|meter|smartcard)/i.test(field)) continue;
+    const text = Array.isArray(raw) ? raw.find((item) => typeof item === 'string') : raw;
+    if (typeof text === 'string' && text.trim()) parts.push(`${field}: ${text.trim()}`);
+    if (parts.length === 3) break;
+  }
+  return parts.length ? parts.join('; ').slice(0, 300) : undefined;
+}
+
 function numericId(value: string | number | undefined): string | number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
   const text = String(value);
@@ -690,7 +714,14 @@ export class MaskawaSubProvider implements VtuProvider {
       const responseBody = axiosError.response?.data;
       const response = asRecord(responseBody);
       const message = String(
-        firstDefined(response.message, response.msg, asRecord(response.data).message, asRecord(response.data).msg, axiosError.message) ??
+        firstDefined(
+          response.message,
+          response.msg,
+          asRecord(response.data).message,
+          asRecord(response.data).msg,
+          extractMaskawaErrorMessage(responseBody),
+          axiosError.message
+        ) ??
           'Provider request failed without a definitive outcome'
       );
       const httpStatus = axiosError.response?.status;
