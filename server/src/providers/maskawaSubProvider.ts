@@ -28,9 +28,10 @@ import {
  *   GET /api/disco/     electricity distribution companies
  *   GET /api/cable/     cable package catalogue
  *
- * Purchase, validation and status contracts have not been certified against a
- * funded test transaction. They therefore remain behind
- * MASKAWASUB_LIVE_PURCHASES=false and fail closed *before* any wallet debit.
+ * Live purchases are gated by the explicit service allowlist in the
+ * environment. The documented airtime/data request fields are used verbatim;
+ * an unrecognised or incomplete provider response remains uncertain rather
+ * than being treated as a successful delivery.
  * This adapter deliberately never reads /api/history/ or /api/sms/: those
  * endpoints returned account-wide records during probing and may contain
  * third-party personal data.
@@ -751,12 +752,14 @@ export class MaskawaSubProvider implements VtuProvider {
       return this.executePurchase(
         PATHS.airtime,
         {
+          // MaskawaSub's published Postman collection expects exactly these
+          // fields for airtime. In particular it does not accept our internal
+          // `phone`, `network_id`, or idempotency-reference aliases.
           network,
-          network_id: network,
-          phone,
           amount: request.amountMinor / 100,
-          ref: request.reference,
-          reference: request.reference,
+          mobile_number: phone,
+          Ported_number: true,
+          airtime_type: 'VTU',
         },
         request.reference
       );
@@ -772,13 +775,11 @@ export class MaskawaSubProvider implements VtuProvider {
       return this.executePurchase(
         PATHS.data,
         {
+          // Matches the documented MaskawaSub /api/data/ payload.
           network,
-          network_id: network,
           plan,
-          data_plan: plan,
-          phone,
-          ref: request.reference,
-          reference: request.reference,
+          mobile_number: phone,
+          Ported_number: true,
         },
         request.reference
       );
