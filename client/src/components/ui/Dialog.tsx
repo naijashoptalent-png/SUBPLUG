@@ -50,6 +50,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
         if (event.target === event.currentTarget) onOpenChange(false);
       }}
       className={cn(
+        !open && 'hidden',
         'm-auto flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border border-line bg-raised p-0 text-ink shadow-lift backdrop:bg-ink/40 backdrop:backdrop-blur-sm open:animate-fade-up sm:max-h-[min(85vh,52rem)] sm:w-[calc(100vw-2rem)] sm:rounded-3xl',
         sizes[size]
       )}
