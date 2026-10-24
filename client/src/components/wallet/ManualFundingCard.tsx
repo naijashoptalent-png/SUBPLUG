@@ -17,7 +17,13 @@ function whatsappUrl(phone: string, message: string) {
   return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(message)}` : undefined;
 }
 
-export function ManualFundingCard() {
+export function ManualFundingCard({
+  embedded = false,
+  amountMinor,
+}: {
+  embedded?: boolean;
+  amountMinor?: number | null;
+}) {
   const { settings } = usePublicSettings();
   const manualQuery = useManualFundingSettings();
   const manual = manualQuery.data;
@@ -29,10 +35,18 @@ export function ManualFundingCard() {
   const [requestReference, setRequestReference] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (manualQuery.isLoading) return null;
+  if (manualQuery.isLoading) {
+    return (
+      <Card className={embedded ? 'space-y-3 p-5' : 'mt-6 space-y-3 p-5'} aria-label="Loading manual transfer details">
+        <div className="h-5 w-48 animate-pulse rounded bg-surface" />
+        <div className="h-4 w-full animate-pulse rounded bg-surface" />
+        <div className="h-16 w-full animate-pulse rounded-2xl bg-surface" />
+      </Card>
+    );
+  }
   if (manualQuery.isError) {
     return (
-      <Card className="mt-6 p-5">
+      <Card className={embedded ? 'p-5' : 'mt-6 p-5'}>
         <Alert variant="danger" title="Manual transfer details could not load">
           Try again later, or contact support before transferring money.
         </Alert>
@@ -42,9 +56,25 @@ export function ManualFundingCard() {
       </Card>
     );
   }
-  if (!manual?.enabled) return null;
+  if (!manual?.enabled) {
+    return (
+      <Card className={embedded ? 'p-5' : 'mt-6 p-5'}>
+        <CardHeader
+          title="Manual bank transfer"
+          description="Bank-transfer wallet funding is not available right now. Please contact support for help."
+        />
+        <a
+          href="/dashboard/support"
+          className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-line px-3 text-xs font-semibold text-ink hover:bg-surface"
+        >
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+          Contact support
+        </a>
+      </Card>
+    );
+  }
 
-  const minor = parseNairaToMinor(amount);
+  const minor = amountMinor === undefined ? parseNairaToMinor(amount) : amountMinor;
   const contactMessage = requestReference
     ? `I made a manual wallet transfer. Request reference: ${requestReference}. Transfer reference: ${transferReference}. Amount: ${amount} NGN.`
     : 'I need help with a manual wallet transfer.';
@@ -73,12 +103,19 @@ export function ManualFundingCard() {
   };
 
   return (
-    <Card className="mt-6">
-      <CardHeader
-        title="Fund by bank transfer"
-        description="Transfer to the account below, then submit your transfer details. Your wallet is credited after verification."
-      />
+    <Card className={embedded ? '' : 'mt-6'}>
+      {!embedded ? (
+        <CardHeader
+          title="Fund by bank transfer"
+          description="Transfer to the account below, then submit your transfer details. Your wallet is credited after verification."
+        />
+      ) : null}
       <div className="space-y-5 p-5 sm:p-6">
+        {embedded ? (
+          <p className="text-sm leading-6 text-muted">
+            Transfer to this account, then submit your transfer details. Your wallet is credited after verification.
+          </p>
+        ) : null}
         <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Bank</p>
@@ -98,6 +135,9 @@ export function ManualFundingCard() {
         </div>
 
         {manual.instructions ? <p className="text-sm leading-6 text-muted">{manual.instructions}</p> : null}
+        {minor && minor > 0 ? (
+          <p className="text-sm font-semibold text-ink">Amount to transfer: {formatNaira(minor)}</p>
+        ) : null}
         <Alert variant="warning" title="Do not submit until you have transferred">
           Submitting a request does not move money automatically. Keep your bank transfer receipt; an administrator will
           check the transfer before crediting your wallet.
@@ -130,14 +170,16 @@ export function ManualFundingCard() {
 
         {!requestReference ? (
           <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
-            <Input
-              label="Amount transferred (₦)"
-              inputMode="decimal"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="5,000"
-              required
-            />
+            {amountMinor === undefined ? (
+              <Input
+                label="Amount transferred (₦)"
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                placeholder="5,000"
+                required
+              />
+            ) : null}
             <Input
               label="Name on sending bank account"
               value={senderName}
