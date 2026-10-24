@@ -15,9 +15,49 @@ import { sendFundingReceipt } from './emailService';
 import { writeAudit } from './auditService';
 import { paginationMeta } from '../utils/pagination';
 import { formatNaira } from '../utils/money';
+import { FlutterwaveProvider } from '../providers/flutterwaveProvider';
 
 function gatewayForFunding(funding: { gateway: string }) {
   return getPaymentProvider(funding.gateway);
+}
+
+async function confirmVirtualAccountTransfer(
+  provider: FlutterwaveProvider,
+  reference: string,
+  payload: Record<string, unknown>
+) {
+  const account = await User.findOne({ 'virtualAccount.reference': reference }).select('_id email fullName virtualAccount');
+  if (!account) return null;
+
+  const data = (payload.data ?? {}) as Record<string, unknown>;
+  const transactionId = data.id === undefined ? '' : String(data.id);
+  if (!transactionId) return { status: 'PENDING' as const, reason: 'Missing Flutterwave transaction ID' };
+
+  const verification = await provider.verifyTransaction(transactionId);
+  if (verification.outcome !== 'SUCCESSFUL') return { status: verification.outcome, reason: verification.message };
+  if (!verification.amountMinor || verification.amountMinor <= 0 || verification.currency !== 'NGN') {
+    return { status: 'REQUIRES_REVIEW' as const, reason: 'Invalid virtual-account payment amount or currency' };
+  }
+  if (verification.gatewayReference !== reference) {
+    return { status: 'REQUIRES_REVIEW' as const, reason: 'Virtual-account payment reference mismatch' };
+  }
+
+  await creditWallet({
+    userId: String(account._id),
+    amountMinor: verification.amountMinor,
+    type: 'FUNDING_CREDIT',
+    idempotencyKey: `flutterwave-virtual-account:${transactionId}`,
+    description: 'Flutterwave bank transfer funding',
+    metadata: { gateway: 'flutterwave', transactionId, virtualAccountReference: reference },
+  });
+  await notify({
+    userId: String(account._id),
+    type: 'FUNDING',
+    title: 'Wallet funded',
+    body: `${formatNaira(verification.amountMinor)} was added from your bank transfer.`,
+    link: '/dashboard/wallet',
+  });
+  return { status: 'SUCCESSFUL' as const, amountMinor: verification.amountMinor };
 }
 
 export async function initializeFunding(input: {
@@ -363,6 +403,17 @@ export async function handlePaymentWebhook(
 
   const funding = await WalletFunding.findOne({ reference: validation.reference }).lean();
   if (!funding) {
+    if (provider instanceof FlutterwaveProvider) {
+      const result = await confirmVirtualAccountTransfer(provider, validation.reference, validation.payload);
+      if (result) {
+        const processed = result.status === 'SUCCESSFUL' || result.status === 'FAILED' || result.status === 'REQUIRES_REVIEW';
+        await PaymentEvent.updateOne(
+          { _id: event._id },
+          { $set: { processed, processedAt: processed ? new Date() : null, processingError: processed ? null : result.reason ?? `Outcome: ${result.status}` } }
+        );
+        return { received: true, result };
+      }
+    }
     await PaymentEvent.updateOne(
       { _id: event._id },
       { $set: { processed: true, processedAt: new Date(), processingError: 'Funding record not found' } }

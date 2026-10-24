@@ -92,6 +92,10 @@ export const fundWalletSchema = z.object({
     .optional(),
 });
 
+export const virtualAccountSchema = z.object({
+  nin: z.string().trim().regex(/^[1-9]\d{10}$/, 'Enter your 11-digit NIN'),
+});
+
 export const airtimePurchaseSchema = z.object({
   network: z.enum(NETWORKS),
   phone: phoneSchema,

@@ -1,13 +1,28 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getData, postData } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
-import type { Funding, FundingInit, LedgerEntry, Pagination, WalletOverview } from '@/types';
+import type { Funding, FundingInit, LedgerEntry, Pagination, VirtualAccount, WalletOverview } from '@/types';
 
 export function useWallet() {
   return useQuery({
     queryKey: queryKeys.wallet,
     queryFn: () => getData<WalletOverview>('/wallet'),
     staleTime: 15_000,
+  });
+}
+
+export function useVirtualAccount() {
+  return useQuery({
+    queryKey: queryKeys.virtualAccount,
+    queryFn: () => getData<VirtualAccount | null>('/wallet/virtual-account'),
+  });
+}
+
+export function useCreateVirtualAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (nin: string) => postData<VirtualAccount>('/wallet/virtual-account', { nin }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.virtualAccount }),
   });
 }
 

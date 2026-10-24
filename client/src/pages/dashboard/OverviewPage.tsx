@@ -33,6 +33,7 @@ import { ServiceIcon } from '@/components/ui/ServiceIcon';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
+import { DedicatedAccountCard } from '@/components/wallet/DedicatedAccountCard';
 
 const quickActions = [
   { to: '/dashboard/airtime', label: 'Airtime', copy: 'Top up a phone', icon: Phone, classes: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
@@ -186,6 +187,8 @@ export function OverviewPage() {
             </Link>
           ))}
         </div>
+
+        <DedicatedAccountCard />
 
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
           <Card>

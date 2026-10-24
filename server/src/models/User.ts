@@ -26,6 +26,13 @@ export interface IUser extends Document {
   lastLoginAt?: Date | null;
   passwordChangedAt: Date;
   suspensionReason?: string | null;
+  virtualAccount?: {
+    status: 'ACTIVE' | 'PENDING';
+    accountNumber?: string;
+    bankName?: string;
+    reference?: string;
+    createdAt?: Date;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +60,21 @@ const userSchema = new Schema<IUser>(
     lastLoginAt: { type: Date, default: null },
     passwordChangedAt: { type: Date, default: () => new Date() },
     suspensionReason: { type: String, default: null, maxlength: 300 },
+    // NIN/BVN values are deliberately never persisted. This contains only the
+    // non-sensitive details needed to show the assigned funding account.
+    virtualAccount: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ['ACTIVE', 'PENDING'], required: true },
+          accountNumber: { type: String, trim: true },
+          bankName: { type: String, trim: true },
+          reference: { type: String, trim: true },
+          createdAt: { type: Date },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
   },
   { timestamps: true }
 );

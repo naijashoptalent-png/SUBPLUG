@@ -59,6 +59,14 @@ export interface WalletOverview {
   activity: Array<{ date: string; creditsMinor: number; debitsMinor: number }>;
 }
 
+export interface VirtualAccount {
+  status: 'ACTIVE' | 'PENDING';
+  accountNumber?: string;
+  bankName?: string;
+  reference?: string;
+  createdAt?: string;
+}
+
 export interface LedgerEntry {
   id: string;
   type: LedgerType;

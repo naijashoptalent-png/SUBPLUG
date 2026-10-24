@@ -4,10 +4,21 @@ import * as walletService from '../services/walletService';
 import * as fundingService from '../services/fundingService';
 import { requireIdempotencyKey } from '../middleware/validate';
 import { AppError } from '../utils/AppError';
+import * as virtualAccountService from '../services/virtualAccountService';
 
 export const getWallet = asyncHandler(async (req: Request, res: Response) => {
   const overview = await walletService.getWalletOverview(req.user!.id);
   res.json({ data: overview });
+});
+
+export const getVirtualAccount = asyncHandler(async (req: Request, res: Response) => {
+  const account = await virtualAccountService.getVirtualAccount(req.user!.id);
+  res.json({ data: account });
+});
+
+export const createVirtualAccount = asyncHandler(async (req: Request, res: Response) => {
+  const account = await virtualAccountService.createVirtualAccount(req.user!.id, req.body.nin);
+  res.status(201).json({ data: account });
 });
 
 export const getLedger = asyncHandler(async (req: Request, res: Response) => {

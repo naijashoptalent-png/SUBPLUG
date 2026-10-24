@@ -25,6 +25,39 @@ function payloadOf(config: InternalAxiosRequestConfig | undefined): Record<strin
 }
 
 describe('Flutterwave provider', () => {
+  it('creates a permanent NIN-backed virtual account', async () => {
+    const provider = new FlutterwaveProvider();
+    let captured: InternalAxiosRequestConfig | undefined;
+    installAdapter(provider, (config) => {
+      captured = config;
+      return {
+        status: 'success',
+        message: 'Virtual account created',
+        data: { account_number: '1234567890', bank_name: 'Flutterwave MFB', flw_ref: 'FLW_VA_1' },
+      };
+    });
+
+    const result = await provider.createStaticVirtualAccount({
+      email: 'customer@example.com',
+      phone: '+2348012345678',
+      fullName: 'Jane Doe',
+      nin: '12345678901',
+      reference: 'VA_abc123',
+    });
+
+    expect(captured?.url).toBe('/virtual-account-numbers');
+    expect(payloadOf(captured)).toMatchObject({
+      email: 'customer@example.com',
+      phonenumber: '08012345678',
+      firstname: 'Jane',
+      lastname: 'Doe',
+      nin: '12345678901',
+      is_permanent: true,
+      tx_ref: 'VA_abc123',
+    });
+    expect(result).toEqual({ accountNumber: '1234567890', bankName: 'Flutterwave MFB', reference: 'FLW_VA_1' });
+  });
+
   it('initializes checkout with Naira major units and the shared reference', async () => {
     const provider = new FlutterwaveProvider();
     let captured: InternalAxiosRequestConfig | undefined;

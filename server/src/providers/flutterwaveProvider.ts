@@ -29,6 +29,14 @@ interface FlutterwaveTransaction {
   created_at?: string;
 }
 
+interface FlutterwaveVirtualAccount {
+  account_number?: string;
+  bank_name?: string;
+  flw_ref?: string;
+  order_ref?: string;
+  account_status?: string;
+}
+
 const MINOR_UNITS_PER_MAJOR = 100;
 
 /** Flutterwave expects major units (Naira); SubPlug stores integer kobo. */
@@ -107,6 +115,49 @@ export class FlutterwaveProvider implements PaymentProvider {
     }
   }
 
+  async createStaticVirtualAccount(input: {
+    email: string;
+    phone: string;
+    fullName: string;
+    nin: string;
+    reference: string;
+  }): Promise<{ accountNumber: string; bankName: string; reference: string }> {
+    const nameParts = input.fullName.trim().split(/\s+/);
+    try {
+      const { data } = await this.client.post<FlutterwaveResponse<FlutterwaveVirtualAccount>>(
+        '/virtual-account-numbers',
+        {
+          email: input.email,
+          phonenumber: input.phone.replace(/^\+234/, '0'),
+          firstname: nameParts[0] ?? 'Customer',
+          lastname: nameParts.slice(1).join(' ') || 'SubPlug',
+          currency: 'NGN',
+          tx_ref: input.reference,
+          is_permanent: true,
+          nin: input.nin,
+          narration: 'SubPlug wallet funding',
+          bank_code: '090567',
+        }
+      );
+      const accountNumber = data.data?.account_number;
+      const bankName = data.data?.bank_name;
+      if (data.status !== 'success' || !accountNumber || !bankName) {
+        throw new Error(data.message || 'Flutterwave did not return an account number');
+      }
+      return { accountNumber, bankName, reference: data.data.flw_ref ?? data.data.order_ref ?? input.reference };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      logger.error(
+        { status: axiosError.response?.status, response: sanitizeProviderPayload(axiosError.response?.data) },
+        'Flutterwave virtual-account creation failed'
+      );
+      throw AppError.serviceUnavailable(
+        'We could not create your funding account. Check your NIN details and try again later.',
+        'VIRTUAL_ACCOUNT_UNAVAILABLE'
+      );
+    }
+  }
+
   async verify(reference: string): Promise<PaymentVerificationResult> {
     try {
       const { data } = await this.client.get<FlutterwaveResponse<FlutterwaveTransaction>>(
@@ -165,6 +216,29 @@ export class FlutterwaveProvider implements PaymentProvider {
         message: 'Payment gateway verification could not be completed',
         raw: sanitizeProviderPayload(axiosError.response?.data),
       };
+    }
+  }
+
+  async verifyTransaction(transactionId: string): Promise<PaymentVerificationResult> {
+    try {
+      const { data } = await this.client.get<FlutterwaveResponse<FlutterwaveTransaction>>(
+        `/transactions/${encodeURIComponent(transactionId)}/verify`
+      );
+      const tx = data.data;
+      if (data.status !== 'success' || !tx) return { outcome: 'UNCERTAIN', message: data.message };
+      const status = String(tx.status ?? '').toLowerCase();
+      return {
+        outcome: status === 'successful' ? 'SUCCESSFUL' : status === 'failed' || status === 'cancelled' ? 'FAILED' : 'PENDING',
+        amountMinor: toMinorUnits(tx.amount),
+        currency: tx.currency?.toUpperCase(),
+        gatewayReference: tx.tx_ref,
+        paidAt: tx.created_at ? new Date(tx.created_at) : undefined,
+        raw: sanitizeProviderPayload(tx),
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      logger.error({ status: axiosError.response?.status, transactionId }, 'Flutterwave transaction verification failed');
+      return { outcome: 'UNCERTAIN', message: 'Payment gateway verification could not be completed' };
     }
   }
 

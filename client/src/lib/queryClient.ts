@@ -30,6 +30,7 @@ export const queryKeys = {
   cablePackages: (network: string) => ['services', 'cable-packages', network] as const,
   airtimeQuote: (network: string, amountMinor: number) => ['services', 'airtime-quote', network, amountMinor] as const,
   wallet: ['wallet'] as const,
+  virtualAccount: ['wallet', 'virtual-account'] as const,
   ledger: (params: Record<string, unknown>) => ['wallet', 'ledger', params] as const,
   fundings: (page: number) => ['wallet', 'fundings', page] as const,
   funding: (reference: string) => ['wallet', 'funding', reference] as const,

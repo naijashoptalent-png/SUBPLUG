@@ -19,6 +19,8 @@ const SENSITIVE_KEYS = [
   'meter',
   'phone',
   'email',
+  'nin',
+  'bvn',
 ];
 
 function isSensitive(key: string): boolean {
