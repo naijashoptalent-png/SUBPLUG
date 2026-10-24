@@ -44,8 +44,8 @@ export function SandboxNotice({ className }: { className?: string }) {
 export function SandboxBadge({ className }: { className?: string }) {
   const { settings } = usePublicSettings();
   const { paymentSandbox, vtuSandbox } = settings.environment;
-  if (!paymentSandbox && !vtuSandbox) return null;
-  const label = paymentSandbox && vtuSandbox ? 'Sandbox' : vtuSandbox ? 'Test VTU' : 'Test funding';
+  if (!vtuSandbox) return null;
+  const label = paymentSandbox ? 'Sandbox' : 'Test VTU';
   return (
     <span
       className={cn(

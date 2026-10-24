@@ -103,32 +103,32 @@ export function ManualFundingCard({
   };
 
   return (
-    <Card className={embedded ? '' : 'mt-6'}>
+    <Card className={embedded ? 'overflow-hidden border-line/80 shadow-none' : 'mt-6'}>
       {!embedded ? (
         <CardHeader
           title="Fund by bank transfer"
           description="Transfer to the account below, then submit your transfer details. Your wallet is credited after verification."
         />
       ) : null}
-      <div className="space-y-5 p-5 sm:p-6">
+      <div className="space-y-4 p-4 sm:space-y-5 sm:p-6">
         {embedded ? (
           <p className="text-sm leading-6 text-muted">
             Transfer to this account, then submit your transfer details. Your wallet is credited after verification.
           </p>
         ) : null}
-        <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-3">
-          <div>
+        <div className="grid min-w-0 gap-3 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-3 sm:p-4">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Bank</p>
             <p className="mt-1 text-sm font-semibold text-ink">{manual.bankName}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Account name</p>
             <p className="mt-1 text-sm font-semibold text-ink">{manual.accountName}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Account number</p>
-            <p className="mt-1 flex items-center gap-2 font-mono text-sm font-semibold text-ink">
-              {manual.accountNumber}
+            <p className="mt-1 flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-ink">
+              <span className="break-all">{manual.accountNumber}</span>
               <CopyButton value={manual.accountNumber} />
             </p>
           </div>
@@ -169,7 +169,7 @@ export function ManualFundingCard({
         ) : null}
 
         {!requestReference ? (
-          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
+          <form onSubmit={submit} className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4" noValidate>
             {amountMinor === undefined ? (
               <Input
                 label="Amount transferred (₦)"

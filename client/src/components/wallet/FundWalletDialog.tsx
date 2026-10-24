@@ -108,6 +108,7 @@ export function FundWalletDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
+      size="lg"
       title="Fund your wallet"
       description={
         isManualFunding
@@ -133,7 +134,12 @@ export function FundWalletDialog({
         </>
       }
     >
-      <form id="fund-wallet-form" onSubmit={isManualFunding ? (event) => event.preventDefault() : handleSubmit} className="space-y-5" noValidate>
+      <form
+        id="fund-wallet-form"
+        onSubmit={isManualFunding ? (event) => event.preventDefault() : handleSubmit}
+        className="space-y-6"
+        noValidate
+      >
         {error ? <Alert variant="danger">{error}</Alert> : null}
 
         {paymentChoices.length === 0 && !manualFundingQuery.isLoading ? (
@@ -152,14 +158,19 @@ export function FundWalletDialog({
         />
 
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Quick amounts</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Quick amounts</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {presets.map((preset) => (
               <button
                 key={preset}
                 type="button"
                 onClick={() => updateAmount(String(preset))}
-                className="rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-muted transition hover:border-brand-400/50 hover:text-ink"
+                className={cn(
+                  'min-h-10 rounded-xl border px-2 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                  minor === preset * 100
+                    ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-300'
+                    : 'border-line bg-surface text-muted hover:border-brand-400/50 hover:text-ink'
+                )}
               >
                 ₦{preset.toLocaleString('en-NG')}
               </button>
@@ -179,7 +190,7 @@ export function FundWalletDialog({
                   <label
                     key={method.key}
                     className={cn(
-                      'flex cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-3 transition',
+                      'flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition focus-within:ring-2 focus-within:ring-brand-500 sm:px-3.5',
                       selected
                         ? 'border-brand-500 bg-brand-500/5 ring-1 ring-brand-500/30'
                         : 'border-line bg-surface hover:border-brand-400/50'
@@ -246,7 +257,11 @@ export function FundWalletDialog({
           </div>
         </div> : null}
       </form>
-      {isManualFunding ? <ManualFundingCard embedded amountMinor={minor} /> : null}
+      {isManualFunding ? (
+        <div className="border-t border-line bg-surface/30 p-3 sm:p-5">
+          <ManualFundingCard embedded amountMinor={minor} />
+        </div>
+      ) : null}
     </Dialog>
   );
 }
