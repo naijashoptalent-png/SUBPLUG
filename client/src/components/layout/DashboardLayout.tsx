@@ -26,6 +26,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Avatar } from '@/components/ui/Avatar';
 import { NotificationBell } from './NotificationBell';
 import { UserMenu } from './UserMenu';
+import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { formatNaira } from '@/lib/format';
@@ -65,7 +66,13 @@ function usePageTitle(pathname: string) {
   return allItems.find((item) => (item.end ? pathname === item.to : pathname.startsWith(item.to)))?.label ?? 'Dashboard';
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({
+  onNavigate,
+  onFundWallet,
+}: {
+  onNavigate?: () => void;
+  onFundWallet: () => void;
+}) {
   const { user, isStaff } = useAuth();
   const { data: wallet } = useWallet();
   const balance = wallet?.wallet.balanceMinor;
@@ -86,14 +93,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <p className="mt-1 font-display text-2xl font-semibold tracking-tight">
             {balance === undefined ? '₦—' : formatNaira(balance)}
           </p>
-          <Link
-            to="/dashboard/wallet"
-            onClick={onNavigate}
+          <button
+            type="button"
+            onClick={() => {
+              onNavigate?.();
+              onFundWallet();
+            }}
             className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/15 px-3 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/25"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             Fund wallet
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -185,6 +195,7 @@ const mobileItems = [
 
 export function DashboardLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [fundOpen, setFundOpen] = useState(false);
   const location = useLocation();
   const title = usePageTitle(location.pathname);
   const { data: wallet } = useWallet();
@@ -216,7 +227,7 @@ export function DashboardLayout() {
       </a>
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] border-r border-line/80 bg-raised/95 backdrop-blur lg:block">
-        <SidebarContent />
+        <SidebarContent onFundWallet={() => setFundOpen(true)} />
       </aside>
 
       {drawerOpen ? (
@@ -236,7 +247,10 @@ export function DashboardLayout() {
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
-            <SidebarContent onNavigate={() => setDrawerOpen(false)} />
+            <SidebarContent
+              onNavigate={() => setDrawerOpen(false)}
+              onFundWallet={() => setFundOpen(true)}
+            />
           </div>
         </div>
       ) : null}
@@ -268,13 +282,14 @@ export function DashboardLayout() {
                 <WalletIcon className="h-3.5 w-3.5 text-brand-600 dark:text-brand-300" aria-hidden="true" />
                 {wallet ? formatNaira(wallet.wallet.balanceMinor) : '₦—'}
               </Link>
-              <Link
-                to="/dashboard/wallet"
+              <button
+                type="button"
+                onClick={() => setFundOpen(true)}
                 className="hidden h-9 items-center gap-1.5 rounded-xl bg-brand-700 px-3 text-xs font-semibold text-white transition hover:bg-brand-800 dark:bg-brand-500 dark:text-brand-950 dark:hover:bg-brand-400 md:inline-flex"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 Fund
-              </Link>
+              </button>
               <NotificationBell />
               <ThemeToggle />
               <UserMenu />
@@ -324,6 +339,8 @@ export function DashboardLayout() {
           })}
         </div>
       </nav>
+
+      <FundWalletDialog open={fundOpen} onOpenChange={setFundOpen} />
     </div>
   );
 }
