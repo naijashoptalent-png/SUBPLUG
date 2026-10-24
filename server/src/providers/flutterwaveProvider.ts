@@ -121,7 +121,7 @@ export class FlutterwaveProvider implements PaymentProvider {
     fullName: string;
     nin: string;
     reference: string;
-  }): Promise<{ accountNumber: string; bankName: string; reference: string }> {
+  }): Promise<{ accountNumber: string; bankName: string; providerReference?: string; orderReference?: string }> {
     const nameParts = input.fullName.trim().split(/\s+/);
     try {
       const { data } = await this.client.post<FlutterwaveResponse<FlutterwaveVirtualAccount>>(
@@ -132,6 +132,9 @@ export class FlutterwaveProvider implements PaymentProvider {
           firstname: nameParts[0] ?? 'Customer',
           lastname: nameParts.slice(1).join(' ') || 'SubPlug',
           currency: 'NGN',
+          // A permanent virtual account must not have a fixed collection
+          // amount. This is what makes it reusable for wallet top-ups.
+          amount: 0,
           tx_ref: input.reference,
           is_permanent: true,
           nin: input.nin,
@@ -144,7 +147,12 @@ export class FlutterwaveProvider implements PaymentProvider {
       if (data.status !== 'success' || !accountNumber || !bankName) {
         throw new Error(data.message || 'Flutterwave did not return an account number');
       }
-      return { accountNumber, bankName, reference: data.data.flw_ref ?? data.data.order_ref ?? input.reference };
+      return {
+        accountNumber,
+        bankName,
+        providerReference: data.data.flw_ref,
+        orderReference: data.data.order_ref,
+      };
     } catch (error) {
       const axiosError = error as AxiosError;
       logger.error(
@@ -197,6 +205,7 @@ export class FlutterwaveProvider implements PaymentProvider {
         amountMinor: toMinorUnits(tx.amount),
         currency: tx.currency ? tx.currency.toUpperCase() : undefined,
         gatewayReference: tx.tx_ref,
+        gatewayTransactionId: tx.id === undefined ? undefined : String(tx.id),
         paidAt: created && !Number.isNaN(created.getTime()) ? created : undefined,
         message: tx.processor_response ?? tx.status,
         raw: sanitizeProviderPayload(tx),
@@ -232,6 +241,7 @@ export class FlutterwaveProvider implements PaymentProvider {
         amountMinor: toMinorUnits(tx.amount),
         currency: tx.currency?.toUpperCase(),
         gatewayReference: tx.tx_ref,
+        gatewayTransactionId: tx.id === undefined ? undefined : String(tx.id),
         paidAt: tx.created_at ? new Date(tx.created_at) : undefined,
         raw: sanitizeProviderPayload(tx),
       };

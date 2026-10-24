@@ -8,6 +8,8 @@ function publicVirtualAccount(account?: {
   accountNumber?: string;
   bankName?: string;
   reference?: string;
+  orderReference?: string;
+  providerReference?: string;
   createdAt?: Date;
 } | null) {
   if (!account) return null;
@@ -74,6 +76,8 @@ export async function createVirtualAccount(userId: string, nin: string) {
             // Keep our own stable transaction reference for webhook matching.
             // Flutterwave may return a separate provider reference.
             reference: `VA_${String(user._id)}`,
+            orderReference: account.orderReference,
+            providerReference: account.providerReference,
             createdAt: new Date(),
           },
         },

@@ -21,6 +21,7 @@ export interface PaymentVerificationResult {
   amountMinor?: number;
   currency?: string;
   gatewayReference?: string;
+  gatewayTransactionId?: string;
   paidAt?: Date;
   message?: string;
   raw?: unknown;

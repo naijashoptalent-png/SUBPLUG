@@ -2,7 +2,7 @@ import { LedgerEntry, Transaction, WalletFunding } from '../models';
 import { getVtuProviderByKey } from '../providers';
 import { getPaymentProvider } from '../providers/paymentIndex';
 import { applyProviderOutcome } from '../services/purchaseService';
-import { confirmFunding } from '../services/fundingService';
+import { confirmFunding, reconcileVirtualAccountTransfers } from '../services/fundingService';
 import { transitionTransaction } from '../services/transactionStateMachine';
 import { refundTransaction, reconcileWallets } from '../services/walletService';
 import { notify } from '../services/notificationService';
@@ -155,15 +155,17 @@ export async function runWalletDriftCheck() {
 }
 
 export async function runReconciliationCycle() {
-  const [transactions, fundings, refunds, stale] = await Promise.allSettled([
+  const [transactions, fundings, virtualAccounts, refunds, stale] = await Promise.allSettled([
     reconcileTransactions(),
     reconcileFundings(),
+    reconcileVirtualAccountTransfers(),
     retryFailedRefunds(),
     flagStalePendingTransactions(),
   ]);
   const summary = {
     transactions: transactions.status === 'fulfilled' ? transactions.value : null,
     fundings: fundings.status === 'fulfilled' ? fundings.value : null,
+    virtualAccounts: virtualAccounts.status === 'fulfilled' ? virtualAccounts.value : null,
     refunds: refunds.status === 'fulfilled' ? refunds.value : null,
     staleFlagged: stale.status === 'fulfilled' ? stale.value : null,
   };

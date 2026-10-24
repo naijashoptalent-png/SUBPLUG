@@ -31,6 +31,8 @@ export interface IUser extends Document {
     accountNumber?: string;
     bankName?: string;
     reference?: string;
+    orderReference?: string;
+    providerReference?: string;
     createdAt?: Date;
   } | null;
   createdAt: Date;
@@ -69,6 +71,8 @@ const userSchema = new Schema<IUser>(
           accountNumber: { type: String, trim: true },
           bankName: { type: String, trim: true },
           reference: { type: String, trim: true },
+          orderReference: { type: String, trim: true },
+          providerReference: { type: String, trim: true },
           createdAt: { type: Date },
         },
         { _id: false }

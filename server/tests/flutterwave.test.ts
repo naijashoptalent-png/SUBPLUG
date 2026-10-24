@@ -55,7 +55,12 @@ describe('Flutterwave provider', () => {
       is_permanent: true,
       tx_ref: 'VA_abc123',
     });
-    expect(result).toEqual({ accountNumber: '1234567890', bankName: 'Flutterwave MFB', reference: 'FLW_VA_1' });
+    expect(result).toEqual({
+      accountNumber: '1234567890',
+      bankName: 'Flutterwave MFB',
+      providerReference: 'FLW_VA_1',
+      orderReference: undefined,
+    });
   });
 
   it('initializes checkout with Naira major units and the shared reference', async () => {

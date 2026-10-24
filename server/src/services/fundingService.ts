@@ -34,30 +34,67 @@ async function confirmVirtualAccountTransfer(
   if (!transactionId) return { status: 'PENDING' as const, reason: 'Missing Flutterwave transaction ID' };
 
   const verification = await provider.verifyTransaction(transactionId);
+  return creditVirtualAccountTransfer(String(account._id), reference, verification, true);
+}
+
+async function creditVirtualAccountTransfer(
+  userId: string,
+  reference: string,
+  verification: PaymentVerificationResult,
+  sendNotification = false
+) {
   if (verification.outcome !== 'SUCCESSFUL') return { status: verification.outcome, reason: verification.message };
   if (!verification.amountMinor || verification.amountMinor <= 0 || verification.currency !== 'NGN') {
     return { status: 'REQUIRES_REVIEW' as const, reason: 'Invalid virtual-account payment amount or currency' };
   }
-  if (verification.gatewayReference !== reference) {
+  if (verification.gatewayReference !== reference || !verification.gatewayTransactionId) {
     return { status: 'REQUIRES_REVIEW' as const, reason: 'Virtual-account payment reference mismatch' };
   }
 
   await creditWallet({
-    userId: String(account._id),
+    userId,
     amountMinor: verification.amountMinor,
     type: 'FUNDING_CREDIT',
-    idempotencyKey: `flutterwave-virtual-account:${transactionId}`,
+    idempotencyKey: `flutterwave-virtual-account:${verification.gatewayTransactionId}`,
     description: 'Flutterwave bank transfer funding',
-    metadata: { gateway: 'flutterwave', transactionId, virtualAccountReference: reference },
+    metadata: { gateway: 'flutterwave', transactionId: verification.gatewayTransactionId, virtualAccountReference: reference },
   });
-  await notify({
-    userId: String(account._id),
-    type: 'FUNDING',
-    title: 'Wallet funded',
-    body: `${formatNaira(verification.amountMinor)} was added from your bank transfer.`,
-    link: '/dashboard/wallet',
-  });
+  if (sendNotification) {
+    await notify({
+      userId,
+      type: 'FUNDING',
+      title: 'Wallet funded',
+      body: `${formatNaira(verification.amountMinor)} was added from your bank transfer.`,
+      link: '/dashboard/wallet',
+    });
+  }
   return { status: 'SUCCESSFUL' as const, amountMinor: verification.amountMinor };
+}
+
+/**
+ * Covers a missed or delayed webhook. Every credit is protected by the gateway
+ * transaction ID, so repeated scans cannot double-credit a wallet.
+ */
+export async function reconcileVirtualAccountTransfers(limit = 100) {
+  if (!env.FLUTTERWAVE_SECRET_KEY) return { checked: 0, credited: 0 };
+  const users = await User.find({ 'virtualAccount.status': 'ACTIVE' })
+    .select('_id virtualAccount')
+    .limit(limit)
+    .lean();
+  const provider = new FlutterwaveProvider();
+  let credited = 0;
+  for (const user of users) {
+    const reference = user.virtualAccount?.reference;
+    if (!reference) continue;
+    try {
+      const verification = await provider.verify(reference);
+      const result = await creditVirtualAccountTransfer(String(user._id), reference, verification);
+      if (result.status === 'SUCCESSFUL') credited += 1;
+    } catch (error) {
+      logger.warn({ err: error, userId: String(user._id) }, 'Virtual-account reconciliation failed');
+    }
+  }
+  return { checked: users.length, credited };
 }
 
 export async function initializeFunding(input: {
