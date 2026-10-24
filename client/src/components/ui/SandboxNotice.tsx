@@ -24,12 +24,7 @@ export function SandboxNotice({ className }: { className?: string }) {
       </>
     );
   } else {
-    message = (
-      <>
-        <span className="font-semibold">Test wallet funding.</span> No real money moves when you top up in this
-        environment. Purchases made with existing wallet funds are sent to the live VTU provider.
-      </>
-    );
+    return null;
   }
 
   return (

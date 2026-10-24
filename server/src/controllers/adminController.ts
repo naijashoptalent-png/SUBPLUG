@@ -216,6 +216,15 @@ export const recheckFunding = asyncHandler(async (req: Request, res: Response) =
   res.json({ data });
 });
 
+export const approveManualFunding = asyncHandler(async (req: Request, res: Response) => {
+  const data = await adminService.approveManualFunding(
+    { id: req.user!.id, name: req.user!.name, role: req.user!.role },
+    req.params.reference,
+    req
+  );
+  res.json({ data });
+});
+
 export const listSupportTickets = asyncHandler(async (req: Request, res: Response) => {
   const data = await supportService.listAllTickets({
     page: Number(req.query.page ?? 1),

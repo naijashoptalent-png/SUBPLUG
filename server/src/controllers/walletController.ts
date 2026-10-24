@@ -5,6 +5,7 @@ import * as fundingService from '../services/fundingService';
 import { requireIdempotencyKey } from '../middleware/validate';
 import { AppError } from '../utils/AppError';
 import * as virtualAccountService from '../services/virtualAccountService';
+import { getManualFundingSettings } from '../services/settingsService';
 
 export const getWallet = asyncHandler(async (req: Request, res: Response) => {
   const overview = await walletService.getWalletOverview(req.user!.id);
@@ -16,9 +17,23 @@ export const getVirtualAccount = asyncHandler(async (req: Request, res: Response
   res.json({ data: account });
 });
 
+export const getManualFundingSettingsController = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: await getManualFundingSettings() });
+});
+
 export const createVirtualAccount = asyncHandler(async (req: Request, res: Response) => {
   const account = await virtualAccountService.createVirtualAccount(req.user!.id, req.body.nin);
   res.status(201).json({ data: account });
+});
+
+export const createManualFunding = asyncHandler(async (req: Request, res: Response) => {
+  const result = await fundingService.createManualFundingRequest({
+    userId: req.user!.id,
+    ...req.body,
+    idempotencyKey: requireIdempotencyKey(req),
+    req,
+  });
+  res.status(201).json({ data: result });
 });
 
 export const getLedger = asyncHandler(async (req: Request, res: Response) => {

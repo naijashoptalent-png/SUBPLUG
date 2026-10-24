@@ -21,6 +21,104 @@ function gatewayForFunding(funding: { gateway: string }) {
   return getPaymentProvider(funding.gateway);
 }
 
+export async function createManualFundingRequest(input: {
+  userId: string;
+  amountMinor: number;
+  senderName: string;
+  senderBank: string;
+  transferReference: string;
+  idempotencyKey: string;
+  req: Request;
+}) {
+  const [limits, settings, user] = await Promise.all([
+    getSetting('limits'),
+    getSetting('manualFunding'),
+    User.findById(input.userId),
+  ]);
+  if (
+    !settings.enabled ||
+    typeof settings.bankName !== 'string' ||
+    !settings.bankName.trim() ||
+    typeof settings.accountName !== 'string' ||
+    !settings.accountName.trim() ||
+    typeof settings.accountNumber !== 'string' ||
+    !/^\d{6,20}$/.test(settings.accountNumber.trim())
+  ) {
+    throw AppError.serviceUnavailable('Manual bank transfer funding is not available right now.', 'MANUAL_FUNDING_UNAVAILABLE');
+  }
+  if (!user) throw AppError.notFound('User not found');
+  if (user.status !== 'ACTIVE') throw AppError.forbidden('Account is not active', 'ACCOUNT_INACTIVE');
+  if (
+    !Number.isSafeInteger(input.amountMinor) ||
+    input.amountMinor < limits.fundingMinMinor ||
+    input.amountMinor > limits.fundingMaxMinor
+  ) {
+    throw AppError.badRequest(
+      `Funding amount must be between ${formatNaira(limits.fundingMinMinor)} and ${formatNaira(limits.fundingMaxMinor)}`,
+      'AMOUNT_OUT_OF_RANGE'
+    );
+  }
+
+  const requestHash = hashRequestPayload({
+    amountMinor: input.amountMinor,
+    senderName: input.senderName,
+    senderBank: input.senderBank,
+    transferReference: input.transferReference,
+  });
+  const existing = await WalletFunding.findOne({ userId: input.userId, idempotencyKey: input.idempotencyKey });
+  if (existing) {
+    if (existing.requestHash !== requestHash) {
+      throw AppError.conflict('Idempotency key was reused with different payment details', 'IDEMPOTENCY_MISMATCH');
+    }
+    return { reference: existing.reference, amountMinor: existing.amountMinor, status: existing.status, duplicate: true };
+  }
+
+  const duplicateTransfer = await WalletFunding.exists({
+    gateway: 'manual',
+    gatewayReference: input.transferReference,
+  });
+  if (duplicateTransfer) {
+    throw AppError.conflict('This bank transfer reference has already been submitted.', 'TRANSFER_REFERENCE_EXISTS');
+  }
+
+  const reference = generateReference('MANUAL');
+  let funding;
+  try {
+    funding = await WalletFunding.create({
+      reference,
+      userId: input.userId,
+      amountMinor: input.amountMinor,
+      status: 'PENDING',
+      gateway: 'manual',
+      gatewayReference: input.transferReference,
+      idempotencyKey: input.idempotencyKey,
+      requestHash,
+      isSandbox: false,
+      gatewayPayload: {
+        senderName: input.senderName,
+        senderBank: input.senderBank,
+        transferReference: input.transferReference,
+      },
+    });
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000) {
+      throw AppError.conflict('This bank transfer reference has already been submitted.', 'TRANSFER_REFERENCE_EXISTS');
+    }
+    throw error;
+  }
+
+  await writeAudit({
+    actorId: input.userId,
+    actorRole: user.role,
+    action: 'MANUAL_FUNDING_SUBMITTED',
+    entityType: 'WalletFunding',
+    entityId: reference,
+    metadata: { amountMinor: input.amountMinor },
+    req: input.req,
+  });
+  return { reference: funding.reference, amountMinor: funding.amountMinor, status: funding.status, duplicate: false };
+}
+
 async function confirmVirtualAccountTransfer(
   provider: FlutterwaveProvider,
   reference: string,

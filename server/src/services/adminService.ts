@@ -32,7 +32,7 @@ import { notify } from './notificationService';
 import { sendSecurityAlert } from './emailService';
 import { getAllSettings, getSetting, updateSetting } from './settingsService';
 import { SETTING_KEYS } from '../config/constants';
-import { checkAndConfirmFunding } from './fundingService';
+import { checkAndConfirmFunding, confirmFunding } from './fundingService';
 import { isServicePurchasable, listAdminPlans, syncCatalogue } from './catalogueService';
 import { supportsTransactions } from '../config/db';
 
@@ -680,6 +680,10 @@ export async function recheckFunding(
   reference: string,
   req: Request
 ) {
+  const funding = await WalletFunding.findOne({ reference }).select('gateway');
+  if (funding?.gateway === 'manual') {
+    throw AppError.badRequest('Manual transfers must be approved after checking the bank transfer.', 'MANUAL_FUNDING_REQUIRES_REVIEW');
+  }
   const result = await checkAndConfirmFunding(reference);
   await writeAudit({
     actorId: actor.id,
@@ -689,6 +693,45 @@ export async function recheckFunding(
     entityType: 'WalletFunding',
     entityId: reference,
     metadata: { outcome: result.status },
+    req,
+  });
+  return result;
+}
+
+export async function approveManualFunding(
+  actor: { id: string; name: string; role: string },
+  reference: string,
+  req: Request
+) {
+  const funding = await WalletFunding.findOne({ reference, gateway: 'manual' });
+  if (!funding) throw AppError.notFound('Manual funding request not found');
+  if (funding.status === 'SUCCESSFUL') {
+    return { status: 'SUCCESSFUL' as const, reference, alreadyProcessed: true };
+  }
+  if (funding.status !== 'PENDING') {
+    throw AppError.conflict('Only pending manual funding requests can be approved', 'FUNDING_NOT_PENDING');
+  }
+
+  const result = await confirmFunding(
+    reference,
+    {
+      outcome: 'SUCCESSFUL',
+      amountMinor: funding.amountMinor,
+      currency: funding.currency,
+      paidAt: new Date(),
+      message: 'Manually verified bank transfer',
+      raw: funding.gatewayPayload,
+    },
+    'admin'
+  );
+  await writeAudit({
+    actorId: actor.id,
+    actorName: actor.name,
+    actorRole: actor.role,
+    action: 'MANUAL_FUNDING_APPROVED',
+    entityType: 'WalletFunding',
+    entityId: reference,
+    metadata: { amountMinor: funding.amountMinor },
     req,
   });
   return result;

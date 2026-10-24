@@ -90,6 +90,7 @@ export interface Funding {
   status: FundingStatus;
   gateway: string;
   gatewayReference?: string | null;
+  gatewayPayload?: Record<string, unknown> | null;
   isSandbox: boolean;
   authorizationUrl?: string | null;
   paidAt?: string | null;
@@ -313,6 +314,14 @@ export interface PublicSettings {
   };
 }
 
+export interface ManualFundingSettings {
+  enabled: boolean;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  instructions: string;
+}
+
 export interface AdminOverview {
   periodDays: number;
   users: { total: number; new: number };
@@ -451,6 +460,7 @@ export interface AuditLog {
 export interface SystemSettings {
   branding: PublicSettings['branding'];
   support: PublicSettings['support'];
+  manualFunding: ManualFundingSettings;
   maintenance: { enabled: boolean; message: string; allowAdmins: boolean };
   registration: { enabled: boolean; requirePhoneVerification: boolean; allowReferrals: boolean };
   limits: Record<string, number>;

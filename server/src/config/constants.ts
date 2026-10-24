@@ -63,6 +63,7 @@ export const SETTING_KEYS = {
   providerRouting: 'providerRouting',
   referrals: 'referrals',
   notifications: 'notifications',
+  manualFunding: 'manualFunding',
 } as const;
 
 export const DEFAULT_SETTINGS = {
@@ -78,6 +79,13 @@ export const DEFAULT_SETTINGS = {
     phone: '+2348000000000',
     whatsapp: '',
     hours: 'Mon–Sat, 8:00–20:00 WAT',
+  },
+  manualFunding: {
+    enabled: false,
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    instructions: 'Transfer the amount you entered, then submit your transfer details for verification.',
   },
   maintenance: {
     enabled: false,

@@ -11,7 +11,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { DescriptionList } from '@/components/ui/DescriptionList';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
-import { useAdminFundings, useRecheckFunding } from '@/hooks/useAdmin';
+import { useAdminFundings, useApproveManualFunding, useRecheckFunding } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDateTime, formatNaira, formatRelative } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
@@ -34,6 +34,7 @@ export function AdminFundingsPage() {
   const [userId, setUserId] = useState(searchParams.get('userId') ?? '');
   const [selected, setSelected] = useState<Funding | null>(null);
   const recheck = useRecheckFunding();
+  const approveManual = useApproveManualFunding();
 
   const fundingsQuery = useAdminFundings({
     page,
@@ -56,6 +57,16 @@ export function AdminFundingsPage() {
     try {
       await recheck.mutateAsync(funding.reference);
       toast.success(`Funding ${funding.reference} was rechecked with the gateway`);
+      setSelected(null);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const runManualApproval = async (funding: Funding) => {
+    try {
+      await approveManual.mutateAsync(funding.reference);
+      toast.success(`Manual funding ${funding.reference} was verified and credited`);
       setSelected(null);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -192,7 +203,16 @@ export function AdminFundingsPage() {
                       </td>
                       <td>
                         <div className="flex items-center justify-end gap-1.5">
-                          {isAdmin && isRecheckable(funding.status) ? (
+                          {isAdmin && funding.gateway === 'manual' && funding.status === 'PENDING' ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => void runManualApproval(funding)}
+                              isLoading={approveManual.isPending && approveManual.variables === funding.reference}
+                            >
+                              Approve transfer
+                            </Button>
+                          ) : isAdmin && funding.gateway !== 'manual' && isRecheckable(funding.status) ? (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -249,7 +269,15 @@ export function AdminFundingsPage() {
             <Button variant="ghost" onClick={() => setSelected(null)}>
               Close
             </Button>
-            {selected && isAdmin && isRecheckable(selected.status) ? (
+            {selected && isAdmin && selected.gateway === 'manual' && selected.status === 'PENDING' ? (
+              <Button
+                onClick={() => void runManualApproval(selected)}
+                isLoading={approveManual.isPending}
+                leftIcon={<Banknote className="h-3.5 w-3.5" />}
+              >
+                Verify and credit transfer
+              </Button>
+            ) : selected && isAdmin && selected.gateway !== 'manual' && isRecheckable(selected.status) ? (
               <Button
                 onClick={() => void runRecheck(selected)}
                 isLoading={recheck.isPending}
@@ -270,6 +298,18 @@ export function AdminFundingsPage() {
                 { label: 'Status', value: <StatusBadge status={selected.status} /> },
                 { label: 'Gateway', value: selected.gateway },
                 { label: 'Gateway reference', value: <span className="font-mono text-xs">{selected.gatewayReference ?? '—'}</span> },
+                ...(selected.gateway === 'manual'
+                  ? [
+                      {
+                        label: 'Sender name',
+                        value: typeof selected.gatewayPayload?.senderName === 'string' ? selected.gatewayPayload.senderName : '—',
+                      },
+                      {
+                        label: 'Sending bank',
+                        value: typeof selected.gatewayPayload?.senderBank === 'string' ? selected.gatewayPayload.senderBank : '—',
+                      },
+                    ]
+                  : []),
                 { label: 'Mode', value: selected.isSandbox ? <Badge tone="warning">Sandbox</Badge> : <Badge tone="success">Live</Badge> },
                 { label: 'Customer', value: selected.userId ? <span className="font-mono text-xs">{selected.userId}</span> : '—' },
                 {

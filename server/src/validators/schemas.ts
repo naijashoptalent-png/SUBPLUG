@@ -96,6 +96,13 @@ export const virtualAccountSchema = z.object({
   nin: z.string().trim().regex(/^[1-9]\d{10}$/, 'Enter your 11-digit NIN'),
 });
 
+export const manualFundingSchema = z.object({
+  amountMinor: amountMinorSchema,
+  senderName: z.string().trim().min(2).max(100),
+  senderBank: z.string().trim().min(2).max(80),
+  transferReference: z.string().trim().min(3).max(100),
+});
+
 export const airtimePurchaseSchema = z.object({
   network: z.enum(NETWORKS),
   phone: phoneSchema,

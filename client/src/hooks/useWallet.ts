@@ -1,7 +1,15 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getData, postData } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
-import type { Funding, FundingInit, LedgerEntry, Pagination, VirtualAccount, WalletOverview } from '@/types';
+import type {
+  Funding,
+  FundingInit,
+  LedgerEntry,
+  ManualFundingSettings,
+  Pagination,
+  VirtualAccount,
+  WalletOverview,
+} from '@/types';
 
 export function useWallet() {
   return useQuery({
@@ -15,6 +23,14 @@ export function useVirtualAccount() {
   return useQuery({
     queryKey: queryKeys.virtualAccount,
     queryFn: () => getData<VirtualAccount | null>('/wallet/virtual-account'),
+  });
+}
+
+export function useManualFundingSettings() {
+  return useQuery({
+    queryKey: queryKeys.manualFundingSettings,
+    queryFn: () => getData<ManualFundingSettings>('/wallet/manual-funding'),
+    staleTime: 60_000,
   });
 }
 
@@ -76,6 +92,33 @@ export function useInitializeFunding() {
         {
           'Idempotency-Key': input.idempotencyKey,
         }
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+      void queryClient.invalidateQueries({ queryKey: ['wallet', 'fundings'] });
+    },
+  });
+}
+
+export function useCreateManualFunding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      amountMinor: number;
+      senderName: string;
+      senderBank: string;
+      transferReference: string;
+      idempotencyKey: string;
+    }) =>
+      postData<{ reference: string; amountMinor: number; status: Funding['status']; duplicate: boolean }>(
+        '/wallet/manual-funding',
+        {
+          amountMinor: input.amountMinor,
+          senderName: input.senderName,
+          senderBank: input.senderBank,
+          transferReference: input.transferReference,
+        },
+        { 'Idempotency-Key': input.idempotencyKey }
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });

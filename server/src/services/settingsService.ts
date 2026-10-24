@@ -37,6 +37,28 @@ export async function getPublicSettings() {
   };
 }
 
+export async function getManualFundingSettings() {
+  const manualFunding = await getSetting('manualFunding');
+  const manualBankName = typeof manualFunding.bankName === 'string' ? manualFunding.bankName.trim() : '';
+  const manualAccountName = typeof manualFunding.accountName === 'string' ? manualFunding.accountName.trim() : '';
+  const manualAccountNumber = typeof manualFunding.accountNumber === 'string' ? manualFunding.accountNumber.trim() : '';
+  const enabled =
+    Boolean(manualFunding.enabled) &&
+    Boolean(manualBankName) &&
+    Boolean(manualAccountName) &&
+    /^\d{6,20}$/.test(manualAccountNumber);
+  return {
+    enabled,
+    bankName: manualBankName,
+    accountName: manualAccountName,
+    accountNumber: manualAccountNumber,
+    instructions:
+      typeof manualFunding.instructions === 'string'
+        ? manualFunding.instructions
+        : DEFAULT_SETTINGS.manualFunding.instructions,
+  };
+}
+
 export async function getAllSettings() {
   const entries = await Promise.all(
     Object.values(SETTING_KEYS).map(async (key) => [key, await getSetting(key as SettingKey)] as const)

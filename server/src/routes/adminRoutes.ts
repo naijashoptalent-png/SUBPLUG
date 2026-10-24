@@ -44,6 +44,7 @@ router.post('/transactions/:reference/approve', requireRole('ADMIN'), validate({
 router.post('/transactions/:reference/reject', requireRole('ADMIN'), validate({ params: referenceParamSchema, body: adminRejectReviewSchema }), controller.rejectReview);
 router.post('/transactions/:reference/check-status', requireRole('ADMIN'), validate({ params: referenceParamSchema }), controller.checkTransactionStatus);
 router.post('/fundings/:reference/recheck', requireRole('ADMIN'), validate({ params: referenceParamSchema }), controller.recheckFunding);
+router.post('/fundings/:reference/approve-manual', requireRole('ADMIN'), validate({ params: referenceParamSchema }), controller.approveManualFunding);
 router.post('/plans/sync', requireRole('ADMIN'), controller.syncCatalogue);
 router.patch('/plans/:id', requireRole('ADMIN'), validate({ params: idParamSchema, body: adminPlanUpdateSchema }), controller.updatePlan);
 router.get('/settings', requireRole('ADMIN'), controller.getSettings);

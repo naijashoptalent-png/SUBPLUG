@@ -387,6 +387,75 @@ export function AdminSettingsPage() {
           </SectionCard>
         </div>
 
+        <SectionCard
+          title="Manual bank funding"
+          description="Bank details displayed to customers for manual wallet transfers"
+          dirty={dirty.has('manualFunding')}
+          saving={isSaving('manualFunding')}
+          onSave={() => requestSave('manualFunding')}
+          note="Only approve a request after confirming the transfer in your bank account."
+        >
+          <div className="rounded-2xl border border-line p-4">
+            <Switch
+              id="manual-funding-enabled"
+              label="Offer manual bank transfers"
+              description="Shows the receiving bank details and transfer request form on the customer wallet page."
+              checked={draft.manualFunding.enabled}
+              onCheckedChange={(checked) =>
+                edit('manualFunding', (current) => ({
+                  ...current,
+                  manualFunding: { ...current.manualFunding, enabled: checked },
+                }))
+              }
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Bank name"
+              value={draft.manualFunding.bankName}
+              onChange={(event) =>
+                edit('manualFunding', (current) => ({
+                  ...current,
+                  manualFunding: { ...current.manualFunding, bankName: event.target.value },
+                }))
+              }
+            />
+            <Input
+              label="Account name"
+              value={draft.manualFunding.accountName}
+              onChange={(event) =>
+                edit('manualFunding', (current) => ({
+                  ...current,
+                  manualFunding: { ...current.manualFunding, accountName: event.target.value },
+                }))
+              }
+            />
+          </div>
+          <Input
+            label="Account number"
+            inputMode="numeric"
+            autoComplete="off"
+            value={draft.manualFunding.accountNumber}
+            onChange={(event) =>
+              edit('manualFunding', (current) => ({
+                ...current,
+                manualFunding: { ...current.manualFunding, accountNumber: event.target.value.replace(/\D/g, '').slice(0, 20) },
+              }))
+            }
+          />
+          <Textarea
+            label="Customer instructions"
+            rows={3}
+            value={draft.manualFunding.instructions}
+            onChange={(event) =>
+              edit('manualFunding', (current) => ({
+                ...current,
+                manualFunding: { ...current.manualFunding, instructions: event.target.value },
+              }))
+            }
+          />
+        </SectionCard>
+
         <div className="grid gap-5 xl:grid-cols-2">
           <SectionCard
             title="Maintenance mode"

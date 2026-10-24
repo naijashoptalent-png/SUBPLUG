@@ -266,6 +266,19 @@ export function useRecheckFunding() {
   });
 }
 
+export function useApproveManualFunding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reference: string) =>
+      postData(`/admin/fundings/${reference}/approve-manual`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'fundings'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'overview'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+    },
+  });
+}
+
 export function useSyncCatalogue() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -313,6 +326,7 @@ export function useSaveSetting() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.adminSettings });
       void queryClient.invalidateQueries({ queryKey: queryKeys.publicSettings });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.manualFundingSettings });
     },
   });
 }

@@ -5,8 +5,11 @@ import { env } from '../src/config/env';
 import { LedgerEntry, PaymentEvent, WalletFunding } from '../src/models';
 import { getPaymentProvider } from '../src/providers/paymentIndex';
 import { MockPaymentProvider } from '../src/providers/mockPaymentProvider';
+import { getManualFundingSettings, getPublicSettings, updateSetting } from '../src/services/settingsService';
+import { approveManualFunding } from '../src/services/adminService';
 import {
   confirmFunding,
+  createManualFundingRequest,
   handlePaymentWebhook,
   initializeFunding,
   simulateSandboxPayment,
@@ -251,6 +254,86 @@ describe('funding confirmation', () => {
     expect(second.alreadyProcessed).toBe(true);
     expect((await getWallet(String(user._id))).balanceMinor).toBe(15_000);
     expect(await LedgerEntry.countDocuments({ userId: user._id })).toBe(1);
+  });
+});
+
+describe('manual bank funding', () => {
+  async function enableManualFunding() {
+    await updateSetting(
+      'manualFunding',
+      {
+        enabled: true,
+        bankName: 'Example Bank',
+        accountName: 'SubPlug Limited',
+        accountNumber: '0123456789',
+      },
+      undefined
+    );
+  }
+
+  it('records submitted transfer details without crediting the wallet', async () => {
+    await enableManualFunding();
+    const user = await createUser();
+    const input = {
+      userId: String(user._id),
+      amountMinor: 25_000,
+      senderName: 'Customer Name',
+      senderBank: 'Customer Bank',
+      transferReference: 'TRF-123456789',
+      idempotencyKey: uniqueReference('manual-fund'),
+      req: fakeReq,
+    };
+
+    const result = await createManualFundingRequest(input);
+    const stored = await WalletFunding.findOne({ reference: result.reference }).lean();
+
+    expect(result).toMatchObject({ status: 'PENDING', duplicate: false });
+    expect(stored).toMatchObject({
+      gateway: 'manual',
+      gatewayReference: 'TRF-123456789',
+      gatewayPayload: { senderName: 'Customer Name', senderBank: 'Customer Bank' },
+    });
+    expect((await getWallet(String(user._id))).balanceMinor).toBe(0);
+  });
+
+  it('keeps receiving account details out of public settings', async () => {
+    await enableManualFunding();
+
+    const [publicSettings, manualFunding] = await Promise.all([getPublicSettings(), getManualFundingSettings()]);
+
+    expect(publicSettings).not.toHaveProperty('manualFunding');
+    expect(manualFunding).toMatchObject({
+      enabled: true,
+      bankName: 'Example Bank',
+      accountName: 'SubPlug Limited',
+      accountNumber: '0123456789',
+    });
+  });
+
+  it('credits a manual transfer only after administrator approval, once', async () => {
+    await enableManualFunding();
+    const user = await createUser();
+    const result = await createManualFundingRequest({
+      userId: String(user._id),
+      amountMinor: 25_000,
+      senderName: 'Customer Name',
+      senderBank: 'Customer Bank',
+      transferReference: 'TRF-987654321',
+      idempotencyKey: uniqueReference('manual-fund'),
+      req: fakeReq,
+    });
+
+    const actor = { id: String(user._id), name: 'Administrator', role: 'ADMIN' };
+    const first = await approveManualFunding(actor, result.reference, fakeReq);
+    const second = await approveManualFunding(actor, result.reference, fakeReq);
+
+    expect(first.status).toBe('SUCCESSFUL');
+    expect(second).toMatchObject({ status: 'SUCCESSFUL', alreadyProcessed: true });
+    expect((await WalletFunding.findOne({ reference: result.reference }).lean())?.gatewayReference).toBe(
+      'TRF-987654321'
+    );
+    expect((await getWallet(String(user._id))).balanceMinor).toBe(25_000);
+    expect(await LedgerEntry.countDocuments({ userId: user._id, type: 'FUNDING_CREDIT' })).toBe(1);
   });
 });
 

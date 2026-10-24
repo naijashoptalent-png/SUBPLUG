@@ -55,6 +55,10 @@ const walletFundingSchema = new Schema<IWalletFunding>(
 );
 
 walletFundingSchema.index({ userId: 1, idempotencyKey: 1 }, { unique: true });
+walletFundingSchema.index(
+  { gateway: 1, gatewayReference: 1 },
+  { unique: true, partialFilterExpression: { gateway: 'manual', gatewayReference: { $type: 'string' } } }
+);
 walletFundingSchema.index({ userId: 1, createdAt: -1 });
 walletFundingSchema.index({ status: 1, createdAt: -1 });
 

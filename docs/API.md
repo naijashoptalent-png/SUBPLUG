@@ -334,7 +334,7 @@ The client must receive `valid: true` before enabling the electricity payment bu
 }
 ```
 
-`paymentGateway` is the default method; `paymentMethods` lists the gateways customers may choose for a top-up (in display order). `vtuSandbox` and `paymentSandbox` are independent. A mixed environment (`vtuSandbox: false`, `paymentSandbox: true`) means test wallet funding can still trigger real VTU purchases; the UI must say so explicitly. Public settings intentionally exclude sensitive configuration, limits, pricing, discounts, and notification controls.
+`paymentGateway` is the default method; `paymentMethods` lists the gateways customers may choose for a top-up (in display order). `vtuSandbox` and `paymentSandbox` are independent. A mixed environment (`vtuSandbox: false`, `paymentSandbox: true`) means test wallet funding can still trigger real VTU purchases. Public settings exclude sensitive configuration, receiving bank details, limits, pricing, discounts, and notification controls.
 
 ---
 
@@ -345,10 +345,12 @@ All wallet routes require an authenticated user. Funding creation requires a ver
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/wallet` | Wallet projection, lifetime totals, recent activity |
+| `GET` | `/wallet/manual-funding` | Manual transfer account details for the authenticated customer |
 | `GET` | `/wallet/ledger` | Paginated immutable ledger |
 | `GET` | `/wallet/fundings` | Paginated funding attempts |
 | `GET` | `/wallet/funding/:reference` | Single funding attempt |
 | `POST` | `/wallet/fund` | Initialise funding (idempotent) |
+| `POST` | `/wallet/manual-funding` | Submit a bank transfer for manual verification (idempotent) |
 | `POST` | `/wallet/funding/:reference/verify` | Re-verify with gateway |
 | `POST` | `/wallet/funding/:reference/simulate` | Sandbox-only success/failure simulation |
 
@@ -429,6 +431,20 @@ Idempotency-Key: fund-2026-10-20-001
 ```
 
 Replaying the same key with the same amount and gateway returns the original funding with `duplicate: true` and does not create a new checkout. Reusing the key with a different amount or gateway returns `409 IDEMPOTENCY_MISMATCH`.
+
+### Manual bank transfer funding
+
+Administrators configure and enable the receiving account under **Admin → System settings → Manual bank funding**. Authenticated customers fetch these details from `GET /wallet/manual-funding`; the unauthenticated public settings endpoint does not expose the account number. Customers submit the transferred amount, sending account name and bank, and bank transfer reference:
+
+```http
+POST /api/v1/wallet/manual-funding
+X-CSRF-Token: …
+Idempotency-Key: manual-fund-2026-10-20-001
+
+{ "amountMinor": 100000, "senderName": "Customer Name", "senderBank": "Example Bank", "transferReference": "TRF-123456789" }
+```
+
+This creates a pending `manual` funding; it never credits the wallet by itself. An administrator must confirm the transfer in the bank account and approve it from **Admin → Wallet fundings**. The approval creates the wallet ledger credit and audit entry. Customers can contact WhatsApp or support with the request reference.
 
 ### Verify funding
 
@@ -666,6 +682,7 @@ Query filters:
 | `POST` | `/admin/transactions/:reference/reject` | `{ reason }` | Reject and refund a held transaction |
 | `POST` | `/admin/transactions/:reference/check-status` | — | Query the VTU provider |
 | `POST` | `/admin/fundings/:reference/recheck` | — | Re-verify funding with the gateway |
+| `POST` | `/admin/fundings/:reference/approve-manual` | — | Approve a manually verified bank transfer and credit the wallet |
 | `POST` | `/admin/plans/sync` | — | Sync catalogue from the provider |
 | `PATCH` | `/admin/plans/:id` | `{ enabled?, sellingPriceMinor?, name? }` | Update a plan |
 | `GET` | `/admin/settings` | — | Read runtime settings |
