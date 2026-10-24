@@ -51,6 +51,9 @@ export function getPaymentProvider(key: string = env.PAYMENT_GATEWAY): PaymentPr
 export function listAvailablePaymentMethods(): Array<{ key: string; name: string; isSandbox: boolean }> {
   const methods: Array<{ key: string; name: string; isSandbox: boolean }> = [];
   for (const key of enabledPaymentGatewayKeys) {
+    // The mock gateway exists solely for automated tests. It must never be
+    // surfaced to a customer in a running application.
+    if (key === 'mock' && env.NODE_ENV !== 'test') continue;
     try {
       const provider = getPaymentProvider(key);
       methods.push({ key: provider.key, name: provider.name, isSandbox: provider.isSandbox });
@@ -62,7 +65,9 @@ export function listAvailablePaymentMethods(): Array<{ key: string; name: string
 }
 
 export function isPaymentGatewayEnabled(key: string): boolean {
-  return enabledPaymentGatewayKeys.includes(key as PaymentGatewayKey);
+  return key !== 'mock' || env.NODE_ENV === 'test'
+    ? enabledPaymentGatewayKeys.includes(key as PaymentGatewayKey)
+    : false;
 }
 
 export function setPaymentProviderForTests(provider: PaymentProvider | null, key?: string): void {

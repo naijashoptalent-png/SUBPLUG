@@ -41,7 +41,7 @@ const envSchema = z.object({
 
   // PAYMENT_GATEWAY is the default (pre-selected) method. PAYMENT_GATEWAYS
   // adds other gateways that customers may choose per top-up.
-  PAYMENT_GATEWAY: z.enum(PAYMENT_GATEWAY_KEYS).default('mock'),
+  PAYMENT_GATEWAY: z.enum(PAYMENT_GATEWAY_KEYS).default('flutterwave'),
   PAYMENT_GATEWAYS: z
     .string()
     .optional()

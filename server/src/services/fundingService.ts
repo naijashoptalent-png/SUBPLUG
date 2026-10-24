@@ -542,9 +542,9 @@ export async function checkAndConfirmFunding(reference: string) {
   return confirmFunding(reference, verification, 'admin');
 }
 
-/** Development-only: marks the sandbox payment and runs the real verification path. */
+/** Test-only: marks a mock payment and runs the real verification path. */
 export async function simulateSandboxPayment(userId: string, reference: string, outcome: 'success' | 'failed' = 'success') {
-  if (env.NODE_ENV === 'production' || !env.ALLOW_MOCK_PAYMENTS) {
+  if (env.NODE_ENV !== 'test' || !env.ALLOW_MOCK_PAYMENTS) {
     throw AppError.forbidden('Sandbox payment simulation is disabled', 'SANDBOX_DISABLED');
   }
   const funding = await WalletFunding.findOne({ reference, userId, isSandbox: true });

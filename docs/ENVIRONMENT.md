@@ -106,7 +106,7 @@ The access and refresh cookies are HTTP-only. The CSRF cookie is intentionally r
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PAYMENT_GATEWAY` | `mock` | Default (pre-selected) method: `mock`, `paystack`, or `flutterwave` |
+| `PAYMENT_GATEWAY` | `flutterwave` | Default customer method: `paystack` or `flutterwave` |
 | `PAYMENT_GATEWAYS` | empty | Comma-separated additional methods offered to customers, e.g. `paystack,flutterwave`. The default gateway is always included |
 | `PAYSTACK_SECRET_KEY` | empty | Paystack secret key (server only) |
 | `PAYSTACK_PUBLIC_KEY` | empty | Reserved for client-side checkout; not required by the current API flow |

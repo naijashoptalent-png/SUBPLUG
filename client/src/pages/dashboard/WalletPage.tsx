@@ -321,13 +321,6 @@ export function WalletPage() {
                     >
                       Receipt
                     </Link>
-                  ) : funding.status === 'PENDING' && funding.isSandbox ? (
-                    <Link
-                      to={`/mock-payment?reference=${funding.reference}`}
-                      className="text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
-                    >
-                      Complete
-                    </Link>
                   ) : null}
                 </li>
               ))}

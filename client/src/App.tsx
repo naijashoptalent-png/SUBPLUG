@@ -25,7 +25,6 @@ const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
 const TwoFactorPage = lazy(() => import('@/pages/auth/TwoFactorPage').then((m) => ({ default: m.TwoFactorPage })));
 
-const MockPaymentPage = lazy(() => import('@/pages/funding/MockPaymentPage').then((m) => ({ default: m.MockPaymentPage })));
 const FundingCallbackPage = lazy(() => import('@/pages/funding/FundingCallbackPage').then((m) => ({ default: m.FundingCallbackPage })));
 
 const OverviewPage = lazy(() => import('@/pages/dashboard/OverviewPage').then((m) => ({ default: m.OverviewPage })));
@@ -99,7 +98,6 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/wallet/funding/callback" element={<FundingCallbackPage />} />
-          <Route path="/mock-payment" element={<MockPaymentPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
