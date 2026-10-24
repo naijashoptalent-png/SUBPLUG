@@ -96,6 +96,45 @@ describe('wallet funding initialization', () => {
     expect(await WalletFunding.countDocuments({ userId: user._id })).toBe(1);
   });
 
+  it('rejects key reuse when the payment gateway changes', async () => {
+    const user = await createUser();
+    const key = uniqueReference('fund-gateway-mismatch');
+    await initializeFunding({
+      userId: String(user._id),
+      amountMinor: 25_000,
+      idempotencyKey: key,
+      req: fakeReq,
+    });
+
+    await expect(
+      initializeFunding({
+        userId: String(user._id),
+        amountMinor: 25_000,
+        gateway: 'paystack',
+        idempotencyKey: key,
+        req: fakeReq,
+      })
+    ).rejects.toMatchObject({ code: 'IDEMPOTENCY_MISMATCH' });
+
+    expect(await WalletFunding.countDocuments({ userId: user._id })).toBe(1);
+  });
+
+  it('refuses a gateway that is not enabled for customers', async () => {
+    const user = await createUser();
+
+    await expect(
+      initializeFunding({
+        userId: String(user._id),
+        amountMinor: 25_000,
+        gateway: 'paystack',
+        idempotencyKey: uniqueReference('fund-gateway'),
+        req: fakeReq,
+      })
+    ).rejects.toMatchObject({ code: 'PAYMENT_GATEWAY_UNAVAILABLE' });
+
+    expect(await WalletFunding.countDocuments({ userId: user._id })).toBe(0);
+  });
+
   it('enforces the configured minimum funding amount', async () => {
     const user = await createUser();
 
@@ -233,7 +272,7 @@ describe('payment webhooks', () => {
       reference: funding.reference,
     });
 
-    await expect(handlePaymentWebhook(body, 'invalid-signature')).rejects.toMatchObject({
+    await expect(handlePaymentWebhook('mock', body, 'invalid-signature')).rejects.toMatchObject({
       code: 'INVALID_SIGNATURE',
     });
 
@@ -256,12 +295,12 @@ describe('payment webhooks', () => {
       reference: funding.reference,
     });
 
-    const first = await handlePaymentWebhook(body, signature);
+    const first = await handlePaymentWebhook('mock', body, signature);
     expect(first.received).toBe(true);
     expect(first).toMatchObject({ result: { status: 'SUCCESSFUL' } });
     expect((await getWallet(String(user._id))).balanceMinor).toBe(25_000);
 
-    const duplicate = await handlePaymentWebhook(body, signature);
+    const duplicate = await handlePaymentWebhook('mock', body, signature);
     expect(duplicate).toMatchObject({ received: true, duplicate: true });
     expect((await getWallet(String(user._id))).balanceMinor).toBe(25_000);
     expect(await PaymentEvent.countDocuments({ eventId })).toBe(1);
@@ -274,9 +313,29 @@ describe('payment webhooks', () => {
       reference: uniqueReference('FUND'),
     });
 
-    const result = await handlePaymentWebhook(body, signature);
+    const result = await handlePaymentWebhook('mock', body, signature);
 
     expect(result).toMatchObject({ received: true, ignored: true });
     expect(await PaymentEvent.countDocuments({ eventType: 'transfer.success' })).toBe(1);
+  });
+
+  it('does not let one gateway confirm a funding created by another', async () => {
+    const user = await createUser();
+    const funding = await startFunding(String(user._id));
+
+    const body = Buffer.from(
+      JSON.stringify({
+        event: 'charge.completed',
+        data: { id: uniqueReference('flw'), tx_ref: funding.reference, status: 'successful' },
+      })
+    );
+    const result = await handlePaymentWebhook('flutterwave', body, env.FLUTTERWAVE_WEBHOOK_SECRET_HASH);
+
+    expect(result).toMatchObject({ received: true, ignored: true });
+    expect((await getWallet(String(user._id))).balanceMinor).toBe(0);
+    expect((await WalletFunding.findOne({ reference: funding.reference }).lean())?.status).toBe('PENDING');
+
+    const event = await PaymentEvent.findOne({ gateway: 'flutterwave' }).lean();
+    expect(event?.processingError).toContain('Gateway mismatch');
   });
 });

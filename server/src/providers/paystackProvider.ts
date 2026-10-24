@@ -23,6 +23,7 @@ export class PaystackProvider implements PaymentProvider {
   readonly key = 'paystack';
   readonly name = 'Paystack';
   readonly isSandbox: boolean;
+  readonly paymentEventTypes = ['charge.success'] as const;
   private readonly client: AxiosInstance;
 
   constructor() {

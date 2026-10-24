@@ -224,7 +224,7 @@ These endpoints are public and cache-friendly. User-specific quotes are not stor
 | `GET` | `/services/airtime-quote` | `network`, `amountMinor` | Discount/fee/payable quote |
 | `POST` | `/services/validate-meter` | Auth + CSRF | Validate a meter before payment |
 | `POST` | `/services/validate-smartcard` | Auth + CSRF | Validate a smartcard before payment |
-| `GET` | `/services/public-settings` | — | Branding, support, maintenance, sandbox flags |
+| `GET` | `/services/public-settings` | — | Branding, support, maintenance, sandbox flags, enabled payment methods |
 | `POST` | `/services/contact` | Public + CSRF | Contact form (rate limited) |
 
 If a service's routed provider is not configured, or the service has not been certified for live purchases, `/services` reports that service with `enabled: false`. The electricity and cable catalogue endpoints then return empty `providers`/`packages` arrays rather than another provider's data, and the web client shows **Temporarily unavailable** instead of a purchase form. This is deliberate fail-closed behaviour: a disabled service never falls back to a different provider.
@@ -321,12 +321,20 @@ The client must receive `valid: true` before enabling the electricity payment bu
     },
     "maintenance": { "enabled": false, "message": "…" },
     "referralsEnabled": true,
-    "environment": { "vtuSandbox": false, "paymentSandbox": true, "paymentGateway": "mock" }
+    "environment": {
+      "vtuSandbox": false,
+      "paymentSandbox": true,
+      "paymentGateway": "paystack",
+      "paymentMethods": [
+        { "key": "paystack", "name": "Paystack", "isSandbox": false },
+        { "key": "flutterwave", "name": "Flutterwave", "isSandbox": true }
+      ]
+    }
   }
 }
 ```
 
-`vtuSandbox` and `paymentSandbox` are independent. A mixed environment (`vtuSandbox: false`, `paymentSandbox: true`) means test wallet funding can still trigger real VTU purchases; the UI must say so explicitly. Public settings intentionally exclude sensitive configuration, limits, pricing, discounts, and notification controls.
+`paymentGateway` is the default method; `paymentMethods` lists the gateways customers may choose for a top-up (in display order). `vtuSandbox` and `paymentSandbox` are independent. A mixed environment (`vtuSandbox: false`, `paymentSandbox: true`) means test wallet funding can still trigger real VTU purchases; the UI must say so explicitly. Public settings intentionally exclude sensitive configuration, limits, pricing, discounts, and notification controls.
 
 ---
 
@@ -399,10 +407,11 @@ POST /api/v1/wallet/fund
 X-CSRF-Token: …
 Idempotency-Key: fund-2026-10-20-001
 
-{ "amountMinor": 100000 }
+{ "amountMinor": 100000, "gateway": "flutterwave" }
 ```
 
 - `amountMinor` must be an integer within `limits.fundingMinMinor`…`fundingMaxMinor`.
+- `gateway` is optional and must be one of the keys returned in `environment.paymentMethods`. Omit it to use the default gateway. An unavailable key returns `400 PAYMENT_GATEWAY_UNAVAILABLE`.
 - `Idempotency-Key`: 8–100 characters, `[A-Za-z0-9_-]`.
 
 ```json
@@ -419,7 +428,7 @@ Idempotency-Key: fund-2026-10-20-001
 }
 ```
 
-Replaying the same key with the same amount returns the original funding with `duplicate: true` and does not create a new checkout. Reusing the key with a different amount returns `409 IDEMPOTENCY_MISMATCH`.
+Replaying the same key with the same amount and gateway returns the original funding with `duplicate: true` and does not create a new checkout. Reusing the key with a different amount or gateway returns `409 IDEMPOTENCY_MISMATCH`.
 
 ### Verify funding
 
@@ -428,7 +437,7 @@ POST /api/v1/wallet/funding/FUND_…/verify
 X-CSRF-Token: …
 ```
 
-Asks the payment provider for the authoritative state. Credit is posted only when verification confirms success. This endpoint is idempotent when called repeatedly.
+Asks the gateway stored on the funding record for the authoritative state. Credit is posted only when verification confirms success. This endpoint is idempotent when called repeatedly.
 
 ### Sandbox simulation
 
@@ -443,23 +452,29 @@ X-CSRF-Token: …
 
 `outcome` is `success` or `failed`. A success simulation credits the wallet through the standard confirmation path; a failed simulation marks the funding failed without crediting. This route is not a shortcut around verification.
 
-### Payment webhook
+### Payment webhooks
 
 ```http
 POST /api/v1/webhooks/paystack
 X-Paystack-Signature: <HMAC-SHA512 of raw body using PAYSTACK_SECRET_KEY>
 ```
 
+```http
+POST /api/v1/webhooks/flutterwave
+verif-hash: <FLUTTERWAVE_WEBHOOK_SECRET_HASH>
+```
+
 The API:
 
-1. Verifies the HMAC against the raw request body.
-2. Deduplicates the event in `PaymentEvent`.
-3. Re-verifies the referenced funding with Paystack.
-4. Credits the wallet idempotently.
+1. Verifies the gateway signature against the raw request body.
+2. Deduplicates the event in `PaymentEvent` (gateway + event ID).
+3. Rejects an event whose gateway does not match the funding's original gateway.
+4. Re-verifies the referenced funding with that gateway.
+5. Credits the wallet idempotently.
 
-Responses: `200` for accepted/duplicate events, `401 INVALID_SIGNATURE` for bad signatures. Webhook endpoints do not require CSRF.
+Responses: `200` for accepted/duplicate/ignored events, `401 INVALID_SIGNATURE` for bad signatures. Webhook endpoints do not require CSRF.
 
-> Configure the gateway to send this event to `https://api.example.com/api/v1/webhooks/paystack`. Do not place middleware that rewrites or re-serialises the raw body in front of it.
+> Configure Paystack to send `charge.success` to `https://api.example.com/api/v1/webhooks/paystack` and Flutterwave to send payments to `https://api.example.com/api/v1/webhooks/flutterwave` with the same secret hash as `FLUTTERWAVE_WEBHOOK_SECRET_HASH`. Do not place middleware that rewrites or re-serialises the raw body in front of either endpoint.
 
 ---
 
@@ -800,13 +815,14 @@ Client retry rules:
 | `WALLET_FROZEN` | 403 | Wallet is not active |
 | `IDEMPOTENCY_MISMATCH` | 409 | Key reused with different details |
 | `AMOUNT_OUT_OF_RANGE` | 400 | Outside configured limits |
+| `PAYMENT_GATEWAY_UNAVAILABLE` | 400/503 | Requested funding method is disabled or not configured |
 | `PLAN_NOT_FOUND` / `PLAN_NETWORK_MISMATCH` | 404/400 | Invalid catalogue selection |
 | `EMAIL_NOT_VERIFIED` | 403 | Purchase/funding attempted before verification |
 | `MAINTENANCE_MODE` | 503 | Maintenance guard active |
 | `INVALID_STATE_TRANSITION` / `STATE_RACE` | 409 | Concurrent or illegal status change |
 | `TICKET_CLOSED` | 409 | Cannot message a closed ticket |
 | `RATE_LIMITED` | 429 | Too many requests |
-| `INVALID_SIGNATURE` | 401 | Webhook HMAC verification failed |
+| `INVALID_SIGNATURE` | 401 | Webhook signature/hash verification failed |
 | `VTU_MOCK_DISABLED` / sandbox errors | 503/403 | Mock adapters blocked in production |
 
 Error messages are user-safe. Do not display raw provider responses to customers; provider payloads are retained for staff reconciliation and redacted in logs.

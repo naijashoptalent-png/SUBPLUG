@@ -20,7 +20,7 @@ import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { useFundings, useLedger, useWallet } from '@/hooks/useWallet';
-import { formatNaira, formatRelative, LEDGER_LABELS } from '@/lib/format';
+import { formatNaira, formatPaymentGateway, formatRelative, LEDGER_LABELS } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { LedgerType } from '@/types';
 
@@ -301,10 +301,9 @@ export function WalletPage() {
                     <p className="text-sm font-semibold text-ink">{formatNaira(funding.amountMinor, { decimals: true })}</p>
                     <p className="mt-0.5 font-mono text-[10px] text-subtle">{funding.reference}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge tone={funding.isSandbox ? 'warning' : 'neutral'}>
-                      {funding.isSandbox ? 'Sandbox' : funding.gateway}
-                    </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone="neutral">{formatPaymentGateway(funding.gateway)}</Badge>
+                    {funding.isSandbox ? <Badge tone="warning">Test</Badge> : null}
                     <StatusBadge status={funding.status} />
                   </div>
                   <p className="w-full text-[11px] text-muted sm:w-auto">{formatRelative(funding.createdAt)}</p>

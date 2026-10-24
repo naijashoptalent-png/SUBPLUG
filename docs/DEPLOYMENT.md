@@ -2,7 +2,7 @@
 
 This guide covers a production deployment of SubPlug on Linux with a managed MongoDB replica set, an optional managed Redis instance, a Node process manager, Nginx, and static hosting for the React build.
 
-> **Do not go live with sandbox providers.** Set `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=sme`, and complete provider certification first. Never set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a real service. Until Paystack keys are configured, mock wallet funding must not be represented as real money.
+> **Do not go live with sandbox providers.** Set `PAYMENT_GATEWAY=paystack` or `PAYMENT_GATEWAY=flutterwave`, `VTU_PROVIDER=sme`, and complete provider certification first. Never set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a real service. Until live gateway keys are configured, mock wallet funding must not be represented as real money.
 
 ---
 
@@ -54,7 +54,7 @@ Supported alternatives:
 | Reverse proxy | Nginx, Caddy, or a platform load balancer with TLS |
 | DNS/TLS | Certificate for the web and API hostnames |
 | Secrets | Managed secret store or platform environment variables |
-| Payment | Live Paystack account, webhook secret, business verification |
+| Payment | Live Paystack and/or Flutterwave account, webhook secret, business verification |
 | VTU | Licensed provider contract, credentials, API documentation, sandbox certification |
 
 ---
@@ -125,10 +125,17 @@ ADMIN_PASSWORD=<strong-unique-password>
 ADMIN_NAME=Platform Owner
 ADMIN_PHONE=08000000000
 
-PAYMENT_GATEWAY=paystack
+# Wallet funding. PAYMENT_GATEWAY is the pre-selected method; add other
+# methods to PAYMENT_GATEWAYS to let customers choose per top-up.
+PAYMENT_GATEWAY=paystack            # mock | paystack | flutterwave
+PAYMENT_GATEWAYS=flutterwave        # e.g. leave empty for one gateway
 PAYSTACK_SECRET_KEY=<live-or-test-secret>
 PAYSTACK_PUBLIC_KEY=<public-key>
 PAYSTACK_BASE_URL=https://api.paystack.co
+FLUTTERWAVE_SECRET_KEY=<live-or-test-secret>
+FLUTTERWAVE_PUBLIC_KEY=<public-key>
+FLUTTERWAVE_BASE_URL=https://api.flutterwave.com/v3
+FLUTTERWAVE_WEBHOOK_SECRET_HASH=<random-secret-hash-set-on-dashboard>
 ALLOW_MOCK_PAYMENTS=false
 PAYMENT_CURRENCY=NGN
 
@@ -379,6 +386,19 @@ Notes:
    - exactly one `FUNDING_CREDIT` ledger entry exists;
    - replaying the webhook does not credit twice.
 
+### Flutterwave
+
+1. Set `FLUTTERWAVE_SECRET_KEY` and `FLUTTERWAVE_PUBLIC_KEY`; keep them server-side.
+2. Add `flutterwave` to `PAYMENT_GATEWAYS` (and optionally make it the default with `PAYMENT_GATEWAY=flutterwave`).
+3. Generate a random secret hash and set it as both `FLUTTERWAVE_WEBHOOK_SECRET_HASH` and the webhook secret hash in the Flutterwave dashboard.
+4. Configure the webhook URL: `https://api.example.com/api/v1/webhooks/flutterwave`.
+5. Make a low-value test payment and verify:
+   - the customer sees Flutterwave in the funding dialog;
+   - the callback uses `tx_ref` and the funding remains pending until server-side verification succeeds;
+   - exactly one `FUNDING_CREDIT` ledger entry exists after both the webhook and callback;
+   - a webhook signed for another gateway cannot credit the funding.
+6. Test keys start with `FLWSECK_TEST-` and are shown as sandbox; live keys start with `FLWSECK-`.
+
 ### VTU provider
 
 1. Set `VTU_PROVIDER=sme`, `VTU_API_BASE_URL=https://smeapi.com.ng`, and a server-side-only `VTU_API_KEY`.
@@ -450,7 +470,8 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 - [ ] `JWT_ACCESS_SECRET` is random, unique, and not the placeholder.
 - [ ] `NODE_ENV=production`, `EXPOSE_DEV_EMAILS=false`.
 - [ ] `ALLOW_SANDBOX_IN_PRODUCTION` is unset or `false`.
-- [ ] `PAYMENT_GATEWAY=paystack`, `VTU_PROVIDER=sme`.
+- [ ] `PAYMENT_GATEWAY` is a live gateway (`paystack` or `flutterwave`), `PAYMENT_GATEWAYS` contains only live gateways, `VTU_PROVIDER=sme`.
+- [ ] Every enabled gateway has credentials; Flutterwave has `FLUTTERWAVE_WEBHOOK_SECRET_HASH` and the dashboard webhook configured.
 - [ ] `VTU_API_KEY` is stored only in the server environment and has been rotated if exposed.
 - [ ] `MASKAWASUB_API_KEY` is server-only; `MASKAWASUB_LIVE_PURCHASES=false` and `MASKAWASUB_CERTIFIED_SERVICES=` unless that exact service has passed certification.
 - [ ] The runtime airtime/data route in **Admin → Providers** points only at a provider certified for that service. Cable and electricity are fixed to MaskawaSub; confirm their certification separately.

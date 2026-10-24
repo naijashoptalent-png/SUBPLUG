@@ -26,6 +26,7 @@ export class MockPaymentProvider implements PaymentProvider {
   readonly key = 'mock';
   readonly name = 'Sandbox Payment Gateway';
   readonly isSandbox = true;
+  readonly paymentEventTypes = ['charge.success'] as const;
   private readonly payments = new Map<string, SandboxPayment>();
 
   async initialize(input: PaymentInitializeInput): Promise<PaymentInitializeResult> {

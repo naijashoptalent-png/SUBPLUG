@@ -114,7 +114,7 @@ export function AdminProvidersPage() {
         }
       />
 
-      {data?.activeVtu.isSandbox && data?.payment.isSandbox ? (
+      {data?.activeVtu.isSandbox && data?.payments.some((payment) => payment.isSandbox) ? (
         <Alert variant="warning" title="Sandbox providers are active" className="mt-5">
           Purchases and wallet funding are simulated. No real airtime, data, electricity, cable service or money is
           delivered. Switch both providers to live credentials before accepting real customers.
@@ -122,9 +122,9 @@ export function AdminProvidersPage() {
       ) : data?.activeVtu.isSandbox ? (
         <Alert variant="warning" title="Sandbox VTU provider is active" className="mt-5">
           Purchases are simulated and no real airtime, data, electricity or cable service is delivered. Wallet funding
-          follows the payment gateway configured below.
+          follows the payment gateways configured below.
         </Alert>
-      ) : data?.payment.isSandbox ? (
+      ) : data?.payments.some((payment) => payment.isSandbox) ? (
         <Alert variant="warning" title="Sandbox wallet funding is active" className="mt-5">
           Wallet top-ups are simulated and do not move real money. Purchases made from an existing wallet balance are
           sent to the live VTU provider and can deliver real services.
@@ -204,7 +204,10 @@ export function AdminProvidersPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Payment gateway" description="Used for wallet funding only" />
+          <CardHeader
+            title="Payment gateways"
+            description="Offered for wallet funding; customers choose a method for each top-up"
+          />
           <div className="p-5">
             {providersQuery.isLoading ? (
               <div className="space-y-3">
@@ -219,31 +222,57 @@ export function AdminProvidersPage() {
                       <CreditCard className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <div>
-                      <p className="text-sm font-semibold capitalize">{data.payment.key}</p>
+                      <p className="text-sm font-semibold">
+                        {data.payments.length > 0
+                          ? `${data.payments.length} gateway${data.payments.length === 1 ? '' : 's'} enabled`
+                          : 'No gateway configured'}
+                      </p>
                       <p className="text-[10px] text-subtle">
-                        {data.payment.configured ? 'Credentials loaded' : 'Not configured'}
+                        {data.payment.configured
+                          ? `Default: ${data.payment.key}`
+                          : 'Funding is disabled until credentials are set'}
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {!data.payment.configured ? <Badge tone="danger">Unconfigured</Badge> : null}
-                    {data.payment.isSandbox ? <Badge tone="warning">Sandbox</Badge> : null}
+                    {data.payments.some((payment) => payment.isSandbox) ? (
+                      <Badge tone="warning">Test mode</Badge>
+                    ) : null}
                   </div>
                 </div>
+
+                {data.payments.length > 0 ? (
+                  <ul className="mt-5 divide-y divide-line rounded-2xl border border-line">
+                    {data.payments.map((payment) => (
+                      <li key={payment.key} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-ink">{payment.name}</p>
+                          <p className="mt-0.5 font-mono text-[10px] text-subtle">{payment.key}</p>
+                        </div>
+                        <Badge tone={payment.isSandbox ? 'warning' : 'success'}>
+                          {payment.isSandbox ? 'Sandbox' : 'Live'}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
                 <DescriptionList
                   className="mt-5"
                   columns={1}
                   items={[
-                    { label: 'Gateway key', value: <span className="font-mono text-xs">{data.payment.key}</span> },
                     {
-                      label: 'Mode',
-                      value: data.payment.configured
-                        ? data.payment.isSandbox
-                          ? 'Sandbox — no real money moves'
-                          : 'Live — real funding only'
-                        : 'Funding is disabled until credentials are set.',
+                      label: 'Webhook',
+                      value: 'Signature-verified before any credit is applied.',
                     },
-                    { label: 'Webhook', value: 'Signature-verified before any credit is applied.' },
+                    {
+                      label: 'Selection',
+                      value:
+                        data.payments.length > 1
+                          ? 'Customers choose a gateway in the funding dialog.'
+                          : 'The configured gateway is used automatically.',
+                    },
                   ]}
                 />
               </>

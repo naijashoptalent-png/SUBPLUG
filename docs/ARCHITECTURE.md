@@ -15,7 +15,7 @@ This document describes how SubPlug is structured, how money moves through the s
              │ hosted checkout redirect                          │         │ signed webhooks
              ▼                                                  ▼         ▼
       Payment gateway                                  MongoDB replica set   Payment gateway
-      (Paystack / mock)                                (users, ledger,       (Paystack / mock)
+      (Paystack / Flutterwave / mock)                  (users, ledger,       (Paystack / Flutterwave / mock)
                                                         transactions)
                                                                   │
                                                                   │ catalogue / purchases / status
@@ -225,17 +225,17 @@ Transactions at or above the configured `manualReviewThresholdMinor` are held be
 ## 7. Funding flow
 
 ```text
-Customer requests funding (amount + idempotency key)
+Customer requests funding (amount + chosen gateway + idempotency key)
    │
-   ├─ Validate amount against runtime limits and account status
-   ├─ Create WalletFunding (PENDING) with provider initialize()
+   ├─ Validate amount, account status, and enabled gateway
+   ├─ Create WalletFunding (PENDING) with the chosen provider initialize()
    ├─ Return authorizationUrl (hosted checkout)
    │
    ▼
 Customer completes/fails checkout at the gateway
    │
    ├─ Browser callback ──► POST /wallet/funding/:reference/verify
-   ├─ Gateway webhook ──► POST /webhooks/paystack (signature verified)
+   ├─ Gateway webhook ──► POST /webhooks/paystack or /webhooks/flutterwave
    └─ Scheduler ────────► periodic verify for stale PENDING fundings
    │
    ▼
@@ -251,9 +251,9 @@ Provider verification says SUCCESS?
 
 Webhook handling:
 
-1. Verify the raw-body HMAC signature before trusting any field.
+1. Verify the gateway signature/hash before trusting any field (Paystack HMAC-SHA512 over the raw body; Flutterwave `verif-hash` shared secret).
 2. Insert a unique `PaymentEvent` (provider + event ID/hash) to deduplicate retries.
-3. Re-verify the transaction with the provider API rather than trusting the webhook payload alone.
+3. Confirm the funding belongs to that gateway, then re-verify with the same provider API rather than trusting the webhook payload alone.
 4. Call `confirmFunding`, which is idempotent at the database level.
 5. Mark the event processed; failures remain visible for retry.
 
@@ -315,12 +315,13 @@ Provider selection is resolved per service from the runtime route. The selected 
 
 ### Payment provider
 
-`PaymentProvider` exposes `initialize`, `verify`, `parseWebhook`, and `isSandbox`. Implementations:
+`PaymentProvider` exposes `initialize`, `verify`, `parseWebhook`, `paymentEventTypes`, and `isSandbox`. Implementations:
 
 - `MockPaymentProvider` — local checkout redirect and simulation endpoint.
 - `PaystackProvider` — Paystack initialise/verify plus HMAC-SHA512 webhook verification.
+- `FlutterwaveProvider` — Flutterwave Standard checkout initialise/verify, Naira↔kobo conversion, and `verif-hash` webhook verification.
 
-The adapter contract is intentionally small so another gateway can be added without changing funding services.
+Multiple gateways can be offered at once. `PAYMENT_GATEWAY` is the default method and `PAYMENT_GATEWAYS` adds others; the public settings endpoint exposes the enabled list and customers choose a gateway per funding request. The chosen key is stored on the `WalletFunding` record, and verification, webhook handling, and reconciliation always use that same adapter. A webhook for another gateway is acknowledged but never applied to the funding. The adapter contract is intentionally small so another gateway can be added without changing funding services.
 
 ---
 

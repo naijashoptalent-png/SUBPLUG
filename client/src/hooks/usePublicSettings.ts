@@ -22,7 +22,12 @@ export const FALLBACK_SETTINGS: PublicSettings = {
     message: 'We are carrying out scheduled maintenance. Please check back shortly.',
   },
   referralsEnabled: true,
-  environment: { vtuSandbox: false, paymentSandbox: false, paymentGateway: 'unconfigured' },
+  environment: {
+    vtuSandbox: false,
+    paymentSandbox: false,
+    paymentGateway: 'unconfigured',
+    paymentMethods: [],
+  },
 };
 
 export function usePublicSettings() {

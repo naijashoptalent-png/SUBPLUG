@@ -22,8 +22,8 @@ import {
   type SwitchableProvider,
   type SwitchableService,
 } from '../providers';
-import { getPaymentProvider } from '../providers/paymentIndex';
-import { env } from '../config/env';
+import { getPaymentProvider, listAvailablePaymentMethods } from '../providers/paymentIndex';
+import { enabledPaymentGatewayKeys, env } from '../config/env';
 import { logger } from '../config/logger';
 import { writeAudit } from './auditService';
 import { adminAdjustWallet } from './walletService';
@@ -342,15 +342,8 @@ function buildServiceRoutes() {
 
 export async function listProviders() {
   const [providers, vtu] = await Promise.all([Provider.find().lean(), Promise.resolve(getVtuProvider())]);
-  let paymentKey = 'unconfigured';
-  let paymentSandbox = false;
-  try {
-    const payment = getPaymentProvider();
-    paymentKey = payment.key;
-    paymentSandbox = payment.isSandbox;
-  } catch {
-    paymentKey = 'unconfigured';
-  }
+  const payments = listAvailablePaymentMethods();
+  const defaultPayment = payments.find((payment) => payment.key === env.PAYMENT_GATEWAY) ?? payments[0];
 
   const configuredVtu = getConfiguredProviderKeys().map((key) => {
     try {
@@ -380,7 +373,12 @@ export async function listProviders() {
     configuredVtu,
     routes,
     serviceRoutes,
-    payment: { key: paymentKey, isSandbox: paymentSandbox, configured: paymentKey !== 'unconfigured' },
+    payment: {
+      key: defaultPayment?.key ?? 'unconfigured',
+      isSandbox: defaultPayment?.isSandbox ?? false,
+      configured: Boolean(defaultPayment),
+    },
+    payments,
   };
 }
 
@@ -561,28 +559,35 @@ export async function checkProviders(actorId: string, actorRole: string, actorNa
       results.push({ provider: key, kind: 'VTU', healthy: false, message: error instanceof Error ? error.message : 'Error' });
     }
   }
-  try {
-    const payment = getPaymentProvider();
-    const health = await payment.healthCheck();
-    await Provider.findOneAndUpdate(
-      { key: payment.key },
-      {
-        $set: {
-          name: payment.name,
-          kind: 'PAYMENT',
-          adapter: payment.key,
-          isSandbox: payment.isSandbox,
-          health: health.healthy ? 'HEALTHY' : 'DOWN',
-          lastCheckedAt: new Date(),
-          lastError: health.healthy ? null : health.message?.slice(0, 500) ?? 'Unhealthy',
+  for (const key of enabledPaymentGatewayKeys) {
+    try {
+      const payment = getPaymentProvider(key);
+      const health = await payment.healthCheck();
+      await Provider.findOneAndUpdate(
+        { key: payment.key },
+        {
+          $set: {
+            name: payment.name,
+            kind: 'PAYMENT',
+            adapter: payment.key,
+            isSandbox: payment.isSandbox,
+            health: health.healthy ? 'HEALTHY' : 'DOWN',
+            lastCheckedAt: new Date(),
+            lastError: health.healthy ? null : health.message?.slice(0, 500) ?? 'Unhealthy',
+          },
+          $setOnInsert: { errorCount: 0 },
         },
-        $setOnInsert: { errorCount: 0 },
-      },
-      { upsert: true }
-    );
-    results.push({ provider: payment.key, kind: 'PAYMENT', ...health });
-  } catch (error) {
-    results.push({ provider: 'payment', kind: 'PAYMENT', healthy: false, message: error instanceof Error ? error.message : 'Error' });
+        { upsert: true }
+      );
+      results.push({ provider: payment.key, kind: 'PAYMENT', ...health });
+    } catch (error) {
+      results.push({
+        provider: key,
+        kind: 'PAYMENT',
+        healthy: false,
+        message: error instanceof Error ? error.message : 'Error',
+      });
+    }
   }
   await writeAudit({
     actorId,

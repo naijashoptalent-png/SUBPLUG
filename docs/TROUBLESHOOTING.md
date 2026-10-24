@@ -75,7 +75,7 @@ Fix: use a replica set (Atlas, or initiate a single-node replica set). Do not se
 
 Symptom: `Mock payments are not allowed in production` or `Mock VTU provider is not allowed in production`.
 
-Fix: set `PAYMENT_GATEWAY=paystack` and `VTU_PROVIDER=sme` with valid credentials. Do not set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a live service.
+Fix: set `PAYMENT_GATEWAY=paystack` or `PAYMENT_GATEWAY=flutterwave` and `VTU_PROVIDER=sme` with valid credentials. Do not set `ALLOW_SANDBOX_IN_PRODUCTION=true` for a live service.
 
 ### SME API says `VTU_NOT_CONFIGURED` or startup fails
 
@@ -245,19 +245,24 @@ The mock simulation is only available for funding records created by a sandbox g
 
 ### Webhook not crediting
 
-Symptom: Paystack shows deliveries failing or the funding stays `PENDING`.
+Symptom: the gateway shows deliveries failing, or a funding stays `PENDING` even though checkout succeeded.
 
 Check:
 
-- URL is exactly `https://api.example.com/api/v1/webhooks/paystack`.
-- `PAYSTACK_SECRET_KEY` matches the dashboard webhook secret.
+- The URL matches the gateway exactly:
+  - Paystack: `https://api.example.com/api/v1/webhooks/paystack`
+  - Flutterwave: `https://api.example.com/api/v1/webhooks/flutterwave`
+- Credentials match the dashboard:
+  - Paystack: `PAYSTACK_SECRET_KEY` is the webhook signing secret.
+  - Flutterwave: `FLUTTERWAVE_WEBHOOK_SECRET_HASH` is exactly the secret hash configured on the dashboard webhook (sent in `verif-hash`).
+- The funding was created with the same gateway that is delivering the webhook. A Paystack webhook cannot confirm a Flutterwave funding (or vice versa); the event is acknowledged and logged as `WEBHOOK_GATEWAY_MISMATCH`.
 - The proxy passes the **raw** body unchanged.
 - The endpoint is publicly reachable over HTTPS.
 - CSRF is not required for webhooks (it is exempt).
 - Response is `2xx`; inspect the API log for `INVALID_SIGNATURE`.
 - Duplicate deliveries are acknowledged without double credit; check `PaymentEvent` if investigating.
 
-If the gateway never delivered, use `POST /wallet/funding/:reference/verify` or wait for reconciliation.
+If the gateway never delivered, use `POST /wallet/funding/:reference/verify` or wait for reconciliation. Both paths resolve the provider from the funding's stored gateway, so funding still works if webhooks are temporarily unavailable.
 
 ### Funding status `REQUIRES_REVIEW`
 

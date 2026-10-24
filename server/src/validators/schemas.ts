@@ -82,7 +82,15 @@ const amountMinorSchema = z
   .int('Amount must be in whole kobo')
   .positive('Amount must be positive');
 
-export const fundWalletSchema = z.object({ amountMinor: amountMinorSchema });
+export const fundWalletSchema = z.object({
+  amountMinor: amountMinorSchema,
+  gateway: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9_-]{2,30}$/, 'Choose a valid payment method')
+    .optional(),
+});
 
 export const airtimePurchaseSchema = z.object({
   network: z.enum(NETWORKS),

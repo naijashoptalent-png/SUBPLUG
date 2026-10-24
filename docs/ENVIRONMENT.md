@@ -106,15 +106,20 @@ The access and refresh cookies are HTTP-only. The CSRF cookie is intentionally r
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PAYMENT_GATEWAY` | `mock` | `mock` or `paystack` |
+| `PAYMENT_GATEWAY` | `mock` | Default (pre-selected) method: `mock`, `paystack`, or `flutterwave` |
+| `PAYMENT_GATEWAYS` | empty | Comma-separated additional methods offered to customers, e.g. `paystack,flutterwave`. The default gateway is always included |
 | `PAYSTACK_SECRET_KEY` | empty | Paystack secret key (server only) |
 | `PAYSTACK_PUBLIC_KEY` | empty | Reserved for client-side checkout; not required by the current API flow |
-| `PAYSTACK_BASE_URL` | `https://api.paystack.co` | Gateway API base URL |
+| `PAYSTACK_BASE_URL` | `https://api.paystack.co` | Paystack API base URL |
+| `FLUTTERWAVE_SECRET_KEY` | empty | Flutterwave secret key (server only) |
+| `FLUTTERWAVE_PUBLIC_KEY` | empty | Reserved for client-side checkout; not required by the hosted-checkout flow |
+| `FLUTTERWAVE_BASE_URL` | `https://api.flutterwave.com/v3` | Flutterwave API base URL |
+| `FLUTTERWAVE_WEBHOOK_SECRET_HASH` | empty | Secret hash set on the Flutterwave dashboard webhook; required in production and sent in `verif-hash` |
 | `ALLOW_MOCK_PAYMENTS` | `true` | Allows the sandbox simulation path in non-production. Production simulation is always blocked |
 | `PAYMENT_CURRENCY` | `NGN` | Must match the gateway and ledger currency |
 | `ALLOW_SANDBOX_IN_PRODUCTION` | `false` | Emergency override that permits mock payment/VTU providers in production. Leave false |
 
-In production with `PAYMENT_GATEWAY=mock`, boot fails unless `ALLOW_SANDBOX_IN_PRODUCTION=true`. Never enable that override for a live service. Do not migrate a development database containing mock-funded wallets into production: those credits are real ledger entries and can be spent on live VTU purchases.
+In production, boot fails if the default gateway is `mock`, or if any gateway in `PAYMENT_GATEWAYS` is missing credentials or is the mock adapter. Flutterwave additionally requires `FLUTTERWAVE_WEBHOOK_SECRET_HASH`. Never enable the sandbox override for a live service. Do not migrate a development database containing mock-funded wallets into production: those credits are real ledger entries and can be spent on live VTU purchases.
 
 ### VTU provider
 
@@ -340,6 +345,6 @@ The client has no runtime environment validation; invalid `VITE_API_URL` produce
 - Use a secret manager in production (hosting platform secrets, AWS Secrets Manager, Azure Key Vault, etc.), not a committed file.
 - Give each environment a distinct JWT secret and distinct payment/provider credentials.
 - Restrict MongoDB and Redis network access to the API.
-- Never put Paystack or VTU secrets in `VITE_*` variables; those are shipped to browsers.
+- Never put payment gateway (Paystack/Flutterwave) or VTU secrets in `VITE_*` variables; those are shipped to browsers.
 - Rotate credentials after any suspected exposure and review the audit log for unusual administrative actions.
 - Back up secrets separately from database backups, under access control.

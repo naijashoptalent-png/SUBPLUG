@@ -25,6 +25,7 @@ export const fundWallet = asyncHandler(async (req: Request, res: Response) => {
   const result = await fundingService.initializeFunding({
     userId: req.user!.id,
     amountMinor: req.body.amountMinor,
+    gateway: req.body.gateway,
     idempotencyKey,
     req,
   });

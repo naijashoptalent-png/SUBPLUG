@@ -3,7 +3,8 @@ import { asyncHandler } from '../utils/asyncHandler';
 import * as catalogueService from '../services/catalogueService';
 import { getPublicSettings, getSetting } from '../services/settingsService';
 import { getVtuProvider, getVtuProviderForService } from '../providers';
-import { getPaymentProvider } from '../providers/paymentIndex';
+import { env } from '../config/env';
+import { listAvailablePaymentMethods } from '../providers/paymentIndex';
 import { AppError } from '../utils/AppError';
 import { sendContactMessage } from '../services/emailService';
 import { writeAudit } from '../services/auditService';
@@ -68,21 +69,19 @@ export const validateSmartcard = asyncHandler(async (req: Request, res: Response
 
 export const publicSettings = asyncHandler(async (_req: Request, res: Response) => {
   const settings = await getPublicSettings();
-  let payment = { key: 'unconfigured', isSandbox: false };
-  try {
-    const instance = getPaymentProvider();
-    payment = { key: instance.key, isSandbox: instance.isSandbox };
-  } catch {
-    payment = { key: 'unconfigured', isSandbox: false };
-  }
+  const paymentMethods = listAvailablePaymentMethods();
+  const defaultMethod = paymentMethods.find((method) => method.key === env.PAYMENT_GATEWAY) ?? paymentMethods[0];
   const vtu = getVtuProvider();
   res.json({
     data: {
       ...settings,
       environment: {
         vtuSandbox: vtu.isSandbox,
-        paymentSandbox: payment.isSandbox,
-        paymentGateway: payment.key,
+        // If any offered method is a sandbox, the UI must warn that test funds
+        // are possible even when another method is live.
+        paymentSandbox: paymentMethods.some((method) => method.isSandbox),
+        paymentGateway: defaultMethod?.key ?? 'unconfigured',
+        paymentMethods,
       },
     },
   });

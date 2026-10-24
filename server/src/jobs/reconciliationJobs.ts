@@ -127,10 +127,10 @@ export async function reconcileFundings(limit = 25) {
     .sort({ createdAt: 1 })
     .limit(limit);
 
-  const provider = getPaymentProvider();
   let credited = 0;
   for (const funding of pending) {
     try {
+      const provider = getPaymentProvider(funding.gateway);
       const verification = await provider.verify(funding.reference);
       const result = await confirmFunding(funding.reference, verification, 'reconciliation');
       if (result.status === 'SUCCESSFUL') credited += 1;

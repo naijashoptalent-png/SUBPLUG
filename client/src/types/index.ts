@@ -280,6 +280,12 @@ export interface ReferralSummary {
   }>;
 }
 
+export interface PaymentMethod {
+  key: string;
+  name: string;
+  isSandbox: boolean;
+}
+
 export interface PublicSettings {
   branding: {
     name: string;
@@ -291,7 +297,12 @@ export interface PublicSettings {
   support: { email: string; phone: string; whatsapp: string; hours: string };
   maintenance: { enabled: boolean; message: string };
   referralsEnabled: boolean;
-  environment: { vtuSandbox: boolean; paymentSandbox: boolean; paymentGateway: string };
+  environment: {
+    vtuSandbox: boolean;
+    paymentSandbox: boolean;
+    paymentGateway: string;
+    paymentMethods: PaymentMethod[];
+  };
 }
 
 export interface AdminOverview {

@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Wallet } from 'lucide-react';
+import { ArrowRight, Check, CreditCard, Wallet } from 'lucide-react';
 import { Dialog } from '@/components/ui/Dialog';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
+import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { useInitializeFunding } from '@/hooks/useWallet';
-import { newIdempotencyKey } from '@/lib/utils';
+import { newIdempotencyKey, cn } from '@/lib/utils';
 import { parseNairaToMinor } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -20,18 +22,28 @@ export function FundWalletDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [amount, setAmount] = useState('');
+  const [gateway, setGateway] = useState('');
   const [error, setError] = useState<string | null>(null);
   const idempotencyKey = useRef(newIdempotencyKey('fund'));
   const initialize = useInitializeFunding();
+  const { settings } = usePublicSettings();
+  const methods = settings.environment.paymentMethods;
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (open) {
-      setAmount('');
-      setError(null);
-      idempotencyKey.current = newIdempotencyKey('fund');
-    }
+    if (!open) return;
+    setAmount('');
+    setError(null);
+    idempotencyKey.current = newIdempotencyKey('fund');
   }, [open]);
+
+  // Keep the selected method valid when settings load or the offered methods change.
+  useEffect(() => {
+    if (!open) return;
+    setGateway((current) =>
+      methods.some((method) => method.key === current) ? current : methods[0]?.key ?? ''
+    );
+  }, [open, methods]);
 
   const updateAmount = (value: string) => {
     setAmount(value);
@@ -39,17 +51,33 @@ export function FundWalletDialog({
     setError(null);
   };
 
+  const updateGateway = (key: string) => {
+    setGateway(key);
+    // The gateway is part of the idempotency request hash.
+    idempotencyKey.current = newIdempotencyKey('fund');
+    setError(null);
+  };
+
   const minor = parseNairaToMinor(amount);
+  const selectedMethod = methods.find((method) => method.key === gateway);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    if (!gateway) {
+      setError('Choose a payment method to continue.');
+      return;
+    }
     if (minor === null || minor < 10000) {
       setError('Enter at least ₦100 to fund your wallet.');
       return;
     }
     try {
-      const result = await initialize.mutateAsync({ amountMinor: minor, idempotencyKey: idempotencyKey.current });
+      const result = await initialize.mutateAsync({
+        amountMinor: minor,
+        idempotencyKey: idempotencyKey.current,
+        gateway,
+      });
       if (!result.authorizationUrl) {
         setError('The payment gateway did not return a checkout URL. Please try again.');
         return;
@@ -71,7 +99,7 @@ export function FundWalletDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Fund your wallet"
-      description="Choose an amount. You’ll complete payment on the configured gateway."
+      description="Choose an amount and payment method. You’ll complete payment on the gateway’s secure checkout."
       footer={
         <>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={initialize.isPending}>
@@ -81,6 +109,7 @@ export function FundWalletDialog({
             type="submit"
             form="fund-wallet-form"
             isLoading={initialize.isPending}
+            disabled={!gateway || methods.length === 0}
             rightIcon={<ArrowRight className="h-4 w-4" />}
           >
             Continue to payment
@@ -90,6 +119,12 @@ export function FundWalletDialog({
     >
       <form id="fund-wallet-form" onSubmit={handleSubmit} className="space-y-5" noValidate>
         {error ? <Alert variant="danger">{error}</Alert> : null}
+
+        {methods.length === 0 ? (
+          <Alert variant="warning" title="Wallet funding is unavailable">
+            No payment method is configured right now. Please try again later or contact support.
+          </Alert>
+        ) : null}
 
         <MoneyInput
           label="Amount to add"
@@ -115,6 +150,69 @@ export function FundWalletDialog({
             ))}
           </div>
         </div>
+
+        {methods.length > 1 ? (
+          <fieldset>
+            <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-subtle">
+              Payment method
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {methods.map((method) => {
+                const selected = gateway === method.key;
+                return (
+                  <label
+                    key={method.key}
+                    className={cn(
+                      'flex cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-3 transition',
+                      selected
+                        ? 'border-brand-500 bg-brand-500/5 ring-1 ring-brand-500/30'
+                        : 'border-line bg-surface hover:border-brand-400/50'
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      value={method.key}
+                      checked={selected}
+                      onChange={() => updateGateway(method.key)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={cn(
+                        'grid h-9 w-9 shrink-0 place-items-center rounded-xl',
+                        selected ? 'bg-brand-500/15 text-brand-700 dark:text-brand-300' : 'bg-raised text-muted'
+                      )}
+                    >
+                      <CreditCard className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold text-ink">{method.name}</span>
+                      {method.isSandbox ? (
+                        <span className="mt-1 inline-flex">
+                          <Badge tone="warning">Test mode</Badge>
+                        </span>
+                      ) : (
+                        <span className="mt-0.5 block text-[10px] text-muted">Secure hosted checkout</span>
+                      )}
+                    </span>
+                    {selected ? <Check className="h-4 w-4 shrink-0 text-brand-700 dark:text-brand-300" aria-hidden="true" /> : null}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : selectedMethod ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-500/10 text-brand-700 dark:text-brand-300">
+              <CreditCard className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted">Payment method</p>
+              <p className="truncate text-sm font-semibold text-ink">{selectedMethod.name}</p>
+            </div>
+            {selectedMethod.isSandbox ? <Badge tone="warning">Test mode</Badge> : null}
+          </div>
+        ) : null}
 
         <div className="rounded-2xl border border-line bg-surface p-4">
           <div className="flex items-start gap-2.5">

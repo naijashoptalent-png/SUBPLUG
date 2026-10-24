@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import { parsePaymentGatewayList, PAYMENT_GATEWAY_KEYS, type PaymentGatewayKey } from './paymentGateways';
 
 dotenv.config();
 
@@ -38,10 +39,24 @@ const envSchema = z.object({
   ADMIN_NAME: z.string().optional(),
   ADMIN_PHONE: z.string().optional(),
 
-  PAYMENT_GATEWAY: z.enum(['mock', 'paystack']).default('mock'),
+  // PAYMENT_GATEWAY is the default (pre-selected) method. PAYMENT_GATEWAYS
+  // adds other gateways that customers may choose per top-up.
+  PAYMENT_GATEWAY: z.enum(PAYMENT_GATEWAY_KEYS).default('mock'),
+  PAYMENT_GATEWAYS: z
+    .string()
+    .optional()
+    .default('')
+    .transform(parsePaymentGatewayList)
+    .pipe(z.array(z.enum(PAYMENT_GATEWAY_KEYS))),
   PAYSTACK_SECRET_KEY: z.string().optional().default(''),
   PAYSTACK_PUBLIC_KEY: z.string().optional().default(''),
   PAYSTACK_BASE_URL: z.string().url().default('https://api.paystack.co'),
+  FLUTTERWAVE_SECRET_KEY: z.string().optional().default(''),
+  FLUTTERWAVE_PUBLIC_KEY: z.string().optional().default(''),
+  FLUTTERWAVE_BASE_URL: z.string().url().default('https://api.flutterwave.com/v3'),
+  // Secret hash configured on the Flutterwave dashboard webhook. Flutterwave
+  // sends it in the verif-hash header; without it the webhook is rejected.
+  FLUTTERWAVE_WEBHOOK_SECRET_HASH: z.string().optional().default(''),
   ALLOW_MOCK_PAYMENTS: bool(true),
   PAYMENT_CURRENCY: z.string().default('NGN'),
 
@@ -119,6 +134,15 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+/**
+ * Gateways offered to customers, in display order. The default gateway is
+ * always included; PAYMENT_GATEWAYS adds the others.
+ */
+export const enabledPaymentGatewayKeys: PaymentGatewayKey[] = Array.from(
+  new Set<PaymentGatewayKey>([env.PAYMENT_GATEWAY, ...env.PAYMENT_GATEWAYS])
+);
+
 export const isProduction = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
 export const isDevelopment = env.NODE_ENV === 'development';
@@ -128,7 +152,25 @@ if (isProduction) {
     throw new Error('JWT_ACCESS_SECRET must be changed before running in production');
   }
   if (env.PAYMENT_GATEWAY === 'mock' && !env.ALLOW_SANDBOX_IN_PRODUCTION) {
-    throw new Error('Mock payments are not allowed in production. Configure PAYMENT_GATEWAY=paystack.');
+    throw new Error(
+      'Mock payments are not allowed in production. Configure PAYMENT_GATEWAY=paystack or PAYMENT_GATEWAY=flutterwave.'
+    );
+  }
+  for (const key of enabledPaymentGatewayKeys) {
+    if (key === 'mock' && !env.ALLOW_SANDBOX_IN_PRODUCTION) {
+      throw new Error('The mock payment gateway is not allowed in production. Remove it from PAYMENT_GATEWAYS.');
+    }
+    if (key === 'paystack' && !env.PAYSTACK_SECRET_KEY) {
+      throw new Error('The Paystack gateway requires PAYSTACK_SECRET_KEY.');
+    }
+    if (key === 'flutterwave' && !env.FLUTTERWAVE_SECRET_KEY) {
+      throw new Error('The Flutterwave gateway requires FLUTTERWAVE_SECRET_KEY.');
+    }
+    if (key === 'flutterwave' && !env.FLUTTERWAVE_WEBHOOK_SECRET_HASH) {
+      throw new Error(
+        'The Flutterwave gateway requires FLUTTERWAVE_WEBHOOK_SECRET_HASH (the secret hash set on the dashboard webhook).'
+      );
+    }
   }
   if (env.VTU_PROVIDER === 'mock' && !env.ALLOW_SANDBOX_IN_PRODUCTION) {
     throw new Error('Mock VTU provider is not allowed in production. Configure a licensed provider.');

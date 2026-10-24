@@ -116,3 +116,14 @@ export const LEDGER_LABELS = {
   REFERRAL_REWARD: 'Referral reward',
   REVERSAL: 'Reversal',
 } as const;
+
+export const PAYMENT_GATEWAY_LABELS: Record<string, string> = {
+  mock: 'Sandbox gateway',
+  paystack: 'Paystack',
+  flutterwave: 'Flutterwave',
+};
+
+export function formatPaymentGateway(key: string | null | undefined) {
+  if (!key) return '—';
+  return PAYMENT_GATEWAY_LABELS[key.toLowerCase()] ?? key;
+}

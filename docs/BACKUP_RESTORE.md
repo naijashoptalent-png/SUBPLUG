@@ -382,7 +382,7 @@ At least quarterly:
 
 1. Pick a random backup.
 2. Restore it to an isolated database/cluster.
-3. Start a staging API against it with mock/sandbox providers and a separate test wallet dataset. Never point the restored production database at live Paystack keys during a drill.
+3. Start a staging API against it with mock/sandbox providers and a separate test wallet dataset. Never point the restored production database at live payment gateway (Paystack/Flutterwave) keys during a drill.
 4. Run the verification queries and application checks.
 5. Record the time taken, issues, and operator.
 6. Fix the runbook if anything was unclear.

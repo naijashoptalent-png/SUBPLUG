@@ -54,10 +54,14 @@ export function useFunding(reference: string | undefined) {
 export function useInitializeFunding() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { amountMinor: number; idempotencyKey: string }) =>
-      postData<FundingInit>('/wallet/fund', { amountMinor: input.amountMinor }, {
-        'Idempotency-Key': input.idempotencyKey,
-      }),
+    mutationFn: (input: { amountMinor: number; idempotencyKey: string; gateway?: string }) =>
+      postData<FundingInit>(
+        '/wallet/fund',
+        { amountMinor: input.amountMinor, ...(input.gateway ? { gateway: input.gateway } : {}) },
+        {
+          'Idempotency-Key': input.idempotencyKey,
+        }
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
       void queryClient.invalidateQueries({ queryKey: ['wallet', 'fundings'] });

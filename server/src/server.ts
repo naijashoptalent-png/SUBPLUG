@@ -1,6 +1,6 @@
 import { createServer } from 'http';
 import { createApp } from './app';
-import { env } from './config/env';
+import { env, enabledPaymentGatewayKeys } from './config/env';
 import { connectDatabase, disconnectDatabase, supportsTransactions } from './config/db';
 import { logger } from './config/logger';
 import { ServicePlan, Provider } from './models';
@@ -44,23 +44,29 @@ async function bootstrap() {
         }
       }
       try {
-        const payment = getPaymentProvider();
-        await Provider.findOneAndUpdate(
-          { key: payment.key },
-          {
-            $set: {
-              name: payment.name,
-              kind: 'PAYMENT',
-              adapter: payment.key,
-              isSandbox: payment.isSandbox,
-              enabled: true,
-            },
-            $setOnInsert: { health: 'UNKNOWN', errorCount: 0 },
-          },
-          { upsert: true }
-        );
+        for (const key of enabledPaymentGatewayKeys) {
+          try {
+            const payment = getPaymentProvider(key);
+            await Provider.findOneAndUpdate(
+              { key: payment.key },
+              {
+                $set: {
+                  name: payment.name,
+                  kind: 'PAYMENT',
+                  adapter: payment.key,
+                  isSandbox: payment.isSandbox,
+                  enabled: true,
+                },
+                $setOnInsert: { health: 'UNKNOWN', errorCount: 0 },
+              },
+              { upsert: true }
+            );
+          } catch (error) {
+            logger.warn({ err: error, gateway: key }, 'Payment gateway not configured');
+          }
+        }
       } catch (error) {
-        logger.warn({ err: error }, 'Payment provider not configured');
+        logger.warn({ err: error }, 'Payment providers could not be inspected');
       }
       let needsSync = false;
       for (const key of getConfiguredProviderKeys()) {
@@ -93,6 +99,7 @@ async function bootstrap() {
         client: env.CLIENT_URL,
         vtuProvider: env.VTU_PROVIDER,
         paymentGateway: env.PAYMENT_GATEWAY,
+        paymentGateways: enabledPaymentGatewayKeys,
         mongoTransactions: supportsTransactions(),
       },
       `SubPlug API listening on http://localhost:${env.PORT}`

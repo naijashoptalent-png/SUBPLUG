@@ -38,6 +38,8 @@ export interface PaymentProvider {
   readonly key: string;
   readonly name: string;
   readonly isSandbox: boolean;
+  /** Webhook event types that represent a completed payment attempt. */
+  readonly paymentEventTypes: readonly string[];
   initialize(input: PaymentInitializeInput): Promise<PaymentInitializeResult>;
   verify(reference: string): Promise<PaymentVerificationResult>;
   parseWebhook(rawBody: Buffer | string, signature: string | undefined): WebhookValidationResult;

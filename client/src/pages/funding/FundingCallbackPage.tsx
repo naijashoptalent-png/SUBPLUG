@@ -12,12 +12,16 @@ import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { Alert } from '@/components/ui/Alert';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { useFunding, useVerifyFunding } from '@/hooks/useWallet';
-import { formatNaira } from '@/lib/format';
+import { formatNaira, formatPaymentGateway } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 
 export function FundingCallbackPage() {
   const [searchParams] = useSearchParams();
-  const reference = searchParams.get('reference') ?? searchParams.get('trxref') ?? '';
+  const reference =
+    searchParams.get('reference') ??
+    searchParams.get('trxref') ??
+    searchParams.get('tx_ref') ??
+    '';
   const { data: funding, isLoading, isError, refetch } = useFunding(reference || undefined);
   const verify = useVerifyFunding();
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +139,7 @@ export function FundingCallbackPage() {
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <span className="text-xs text-muted">Gateway</span>
-                  <span className="text-[11px] font-medium capitalize">{funding.gateway}</span>
+                  <span className="text-[11px] font-medium">{formatPaymentGateway(funding.gateway)}</span>
                 </div>
                 {funding.failureReason ? (
                   <div className="mt-2 border-t border-line pt-2 text-[11px] text-danger">{funding.failureReason}</div>

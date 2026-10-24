@@ -6,7 +6,7 @@ import { logger } from '../config/logger';
 import { generateReference } from '../utils/reference';
 import { hashRequestPayload } from '../utils/crypto';
 import { sanitizeProviderPayload } from '../utils/redact';
-import { getPaymentProvider } from '../providers/paymentIndex';
+import { getPaymentProvider, isPaymentGatewayEnabled } from '../providers/paymentIndex';
 import { PaymentVerificationResult } from '../providers/paymentTypes';
 import { creditWallet } from './walletService';
 import { getSetting } from './settingsService';
@@ -16,14 +16,15 @@ import { writeAudit } from './auditService';
 import { paginationMeta } from '../utils/pagination';
 import { formatNaira } from '../utils/money';
 
-function gatewayForUser() {
-  return getPaymentProvider();
+function gatewayForFunding(funding: { gateway: string }) {
+  return getPaymentProvider(funding.gateway);
 }
 
 export async function initializeFunding(input: {
   userId: string;
   amountMinor: number;
   idempotencyKey: string;
+  gateway?: string;
   req: Request;
 }) {
   const [limits] = await Promise.all([getSetting('limits')]);
@@ -38,7 +39,10 @@ export async function initializeFunding(input: {
   if (!user) throw AppError.notFound('User not found');
   if (user.status !== 'ACTIVE') throw AppError.forbidden('Account is not active', 'ACCOUNT_INACTIVE');
 
-  const requestHash = hashRequestPayload({ amountMinor: input.amountMinor });
+  // The gateway is part of the request hash: reusing a key with another
+  // payment method is a different request, not an idempotent replay.
+  const gatewayKey = input.gateway ?? env.PAYMENT_GATEWAY;
+  const requestHash = hashRequestPayload({ amountMinor: input.amountMinor, gateway: gatewayKey });
   const existing = await WalletFunding.findOne({ userId: input.userId, idempotencyKey: input.idempotencyKey });
   if (existing) {
     if (existing.requestHash !== requestHash) {
@@ -55,7 +59,10 @@ export async function initializeFunding(input: {
     };
   }
 
-  const provider = gatewayForUser();
+  if (!isPaymentGatewayEnabled(gatewayKey)) {
+    throw AppError.badRequest('That payment method is not available.', 'PAYMENT_GATEWAY_UNAVAILABLE');
+  }
+  const provider = getPaymentProvider(gatewayKey);
   const reference = generateReference('FUND');
   const funding = await WalletFunding.create({
     reference,
@@ -298,13 +305,17 @@ export async function verifyFundingWithGateway(
   if (funding.status === 'SUCCESSFUL') {
     return { status: 'SUCCESSFUL' as const, reference, alreadyProcessed: true };
   }
-  const provider = gatewayForUser();
+  const provider = gatewayForFunding(funding);
   const verification = await provider.verify(reference);
   return confirmFunding(reference, verification, source);
 }
 
-export async function handlePaymentWebhook(rawBody: Buffer, signature: string | undefined) {
-  const provider = gatewayForUser();
+export async function handlePaymentWebhook(
+  gatewayKey: string,
+  rawBody: Buffer,
+  signature: string | undefined
+) {
+  const provider = getPaymentProvider(gatewayKey);
   const validation = provider.parseWebhook(rawBody, signature);
   if (!validation.valid) {
     await writeAudit({
@@ -334,7 +345,7 @@ export async function handlePaymentWebhook(rawBody: Buffer, signature: string | 
     throw error;
   }
 
-  if (validation.eventType !== 'charge.success') {
+  if (!provider.paymentEventTypes.includes(validation.eventType)) {
     await PaymentEvent.updateOne(
       { _id: event._id },
       { $set: { processed: true, processedAt: new Date(), processingError: 'Ignored event type' } }
@@ -348,6 +359,40 @@ export async function handlePaymentWebhook(rawBody: Buffer, signature: string | 
       { $set: { processed: false, processingError: 'Missing reference' } }
     );
     return { received: true, pending: true };
+  }
+
+  const funding = await WalletFunding.findOne({ reference: validation.reference }).lean();
+  if (!funding) {
+    await PaymentEvent.updateOne(
+      { _id: event._id },
+      { $set: { processed: true, processedAt: new Date(), processingError: 'Funding record not found' } }
+    );
+    logger.warn({ gateway: provider.key, reference: validation.reference }, 'Webhook references an unknown funding');
+    return { received: true, ignored: true };
+  }
+  // Never let one gateway confirm a funding created by another gateway.
+  if (funding.gateway !== provider.key) {
+    await PaymentEvent.updateOne(
+      { _id: event._id },
+      {
+        $set: {
+          processed: true,
+          processedAt: new Date(),
+          processingError: `Gateway mismatch: funding uses ${funding.gateway}`,
+        },
+      }
+    );
+    await writeAudit({
+      action: 'WEBHOOK_GATEWAY_MISMATCH',
+      entityType: 'WalletFunding',
+      entityId: String(funding._id),
+      metadata: { gateway: provider.key, fundingGateway: funding.gateway, reference: funding.reference },
+    });
+    logger.error(
+      { gateway: provider.key, fundingGateway: funding.gateway, reference: funding.reference },
+      'Webhook gateway does not match the funding record'
+    );
+    return { received: true, ignored: true };
   }
 
   try {
@@ -384,12 +429,12 @@ export async function reconcilePendingFundings(limit = 25) {
     .sort({ createdAt: 1 })
     .limit(limit);
 
-  const provider = gatewayForUser();
   let checked = 0;
   let credited = 0;
   for (const funding of pending) {
     checked += 1;
     try {
+      const provider = gatewayForFunding(funding);
       const verification = await provider.verify(funding.reference);
       const result = await confirmFunding(funding.reference, verification, 'reconciliation');
       if (result.status === 'SUCCESSFUL') credited += 1;
@@ -404,7 +449,7 @@ export async function reconcilePendingFundings(limit = 25) {
 export async function checkAndConfirmFunding(reference: string) {
   const funding = await WalletFunding.findOne({ reference });
   if (!funding) throw AppError.notFound('Funding record not found');
-  const provider = gatewayForUser();
+  const provider = gatewayForFunding(funding);
   const verification = await provider.verify(reference);
   return confirmFunding(reference, verification, 'admin');
 }
@@ -414,10 +459,10 @@ export async function simulateSandboxPayment(userId: string, reference: string, 
   if (env.NODE_ENV === 'production' || !env.ALLOW_MOCK_PAYMENTS) {
     throw AppError.forbidden('Sandbox payment simulation is disabled', 'SANDBOX_DISABLED');
   }
-  const provider = gatewayForUser();
-  if (provider.key !== 'mock') throw AppError.forbidden('Sandbox simulation only works with the mock gateway', 'NOT_SANDBOX');
   const funding = await WalletFunding.findOne({ reference, userId, isSandbox: true });
   if (!funding) throw AppError.notFound('Sandbox funding record not found');
+  const provider = gatewayForFunding(funding);
+  if (provider.key !== 'mock') throw AppError.forbidden('Sandbox simulation only works with the mock gateway', 'NOT_SANDBOX');
   const mock = provider as unknown as {
     markPaid: (ref: string) => boolean;
     markFailed: (ref: string) => boolean;

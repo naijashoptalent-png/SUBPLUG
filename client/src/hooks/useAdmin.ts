@@ -130,6 +130,7 @@ export function useAdminProviders() {
         routes: Partial<Record<ServiceRouteKey, string>>;
         serviceRoutes: ProviderServiceRoute[];
         payment: { key: string; isSandbox: boolean; configured: boolean };
+        payments: Array<{ key: string; name: string; isSandbox: boolean }>;
       }>('/admin/providers'),
   });
 }

@@ -16,7 +16,7 @@ import {
   ReceiptText,
   ShieldCheck,
   Smartphone,
-  Sparkles,
+  // Sparkles,
   Tv,
   Wifi,
   Zap,
@@ -26,7 +26,7 @@ import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { useNetworks } from '@/hooks/useCatalogue';
 import { useServices } from '@/hooks/useCatalogue';
 import { buttonStyles } from '@/components/ui/Button';
-import { SandboxBadge } from '@/components/ui/SandboxNotice';
+// import { SandboxBadge } from '@/components/ui/SandboxNotice';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { ServiceIcon } from '@/components/ui/ServiceIcon';
 import { Card } from '@/components/ui/Card';
@@ -142,13 +142,13 @@ export function HomePage() {
         <div className="container-page py-6 sm:py-10 lg:py-14">
           <div className="hero-panel grid items-center gap-14 overflow-hidden rounded-[2rem] border border-line/80 px-6 py-10 shadow-lift sm:px-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:px-14 lg:py-16">
           <div className="animate-fade-up">
-            <div className="flex flex-wrap items-center gap-2">
+            {/* <div className="flex flex-wrap items-center gap-2">
               <span className="section-eyebrow">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 Everyday bills, one wallet
               </span>
               <SandboxBadge />
-            </div>
+            </div> */}
 
             <h1 className="mt-6 max-w-2xl font-display text-[2.65rem] font-semibold leading-[1.02] tracking-[-0.03em] text-ink sm:text-6xl lg:text-[4.2rem]">
               Top up life, <span className="text-gradient">simply.</span>
