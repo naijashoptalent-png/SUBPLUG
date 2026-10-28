@@ -50,11 +50,11 @@ export function NotificationBell() {
 
       {open ? (
         <div
-          className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-raised shadow-lift"
+          className="fixed inset-x-3 top-[4.5rem] z-50 flex max-h-[calc(100dvh-5.25rem)] flex-col overflow-hidden rounded-2xl border border-line bg-raised shadow-lift sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-[none] sm:w-[min(22rem,calc(100vw-2rem))]"
           role="dialog"
           aria-label="Notifications"
         >
-          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
             <p className="text-sm font-semibold">Notifications</p>
             {unread > 0 ? (
               <button
@@ -69,7 +69,7 @@ export function NotificationBell() {
             ) : null}
           </div>
 
-          <div className="max-h-[22rem] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto sm:max-h-[22rem]">
             {isLoading ? (
               <div className="space-y-3 p-4">
                 <Skeleton className="h-12 w-full" />
@@ -127,7 +127,7 @@ export function NotificationBell() {
           <Link
             to="/dashboard/notifications"
             onClick={() => setOpen(false)}
-            className="block border-t border-line px-4 py-2.5 text-center text-xs font-semibold text-brand-700 hover:bg-surface dark:text-brand-300"
+            className="block shrink-0 border-t border-line px-4 py-2.5 text-center text-xs font-semibold text-brand-700 hover:bg-surface dark:text-brand-300"
           >
             View all notifications
           </Link>

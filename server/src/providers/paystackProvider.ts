@@ -90,6 +90,8 @@ export class PaystackProvider implements PaymentProvider {
         status: string;
         reference: string;
         amount: number;
+        requested_amount?: number;
+        fees?: number;
         currency: string;
         paid_at?: string;
         gateway_response?: string;
@@ -126,6 +128,7 @@ export class PaystackProvider implements PaymentProvider {
       return {
         outcome,
         amountMinor: tx.amount,
+        requestedAmountMinor: tx.requested_amount,
         currency: tx.currency,
         gatewayReference: tx.reference,
         paidAt,

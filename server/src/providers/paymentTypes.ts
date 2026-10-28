@@ -19,6 +19,8 @@ export type PaymentVerificationOutcome = 'SUCCESSFUL' | 'FAILED' | 'PENDING' | '
 export interface PaymentVerificationResult {
   outcome: PaymentVerificationOutcome;
   amountMinor?: number;
+  /** Amount requested from the customer before any provider-collected fees. */
+  requestedAmountMinor?: number;
   currency?: string;
   gatewayReference?: string;
   gatewayTransactionId?: string;

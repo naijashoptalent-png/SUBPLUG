@@ -357,7 +357,10 @@ export async function confirmFunding(
   if (funding.status === 'SUCCESSFUL') {
     return { status: 'SUCCESSFUL' as const, reference: funding.reference, alreadyProcessed: true };
   }
-  if (funding.status === 'REQUIRES_REVIEW') {
+  // A gateway mismatch is normally terminal, but it may be safely retried
+  // after a provider adapter gains support for a fee-inclusive amount. Every
+  // retry still verifies against the provider before a ledger credit is made.
+  if (funding.status === 'REQUIRES_REVIEW' && !funding.reviewReason?.startsWith('Gateway mismatch:')) {
     return {
       status: 'REQUIRES_REVIEW' as const,
       reference: funding.reference,
@@ -393,14 +396,19 @@ export async function confirmFunding(
   }
 
   // Outcome is SUCCESSFUL. Validate everything before touching the ledger.
-  const amountMatches = verification.amountMinor === funding.amountMinor;
+  // Paystack reports both the merchant-requested amount and the total amount
+  // collected. For bank channels the latter includes Paystack's fee, which is
+  // paid by the customer and must not inflate the wallet credit or trigger a
+  // false review. Other providers fall back to their verified paid amount.
+  const verifiedFundingAmountMinor = verification.requestedAmountMinor ?? verification.amountMinor;
+  const amountMatches = verifiedFundingAmountMinor === funding.amountMinor;
   const currencyMatches = (verification.currency ?? env.PAYMENT_CURRENCY) === funding.currency;
   const referenceMatches = !verification.gatewayReference || verification.gatewayReference === funding.reference;
 
   if (!amountMatches || !currencyMatches || !referenceMatches) {
     await markReview(
       String(funding._id),
-      `Gateway mismatch: expected ${funding.amountMinor} ${funding.currency} / ${funding.reference}; got ${verification.amountMinor} ${verification.currency} / ${verification.gatewayReference}`
+      `Gateway mismatch: expected ${funding.amountMinor} ${funding.currency} / ${funding.reference}; got ${verifiedFundingAmountMinor} ${verification.currency} / ${verification.gatewayReference}`
     );
     await writeAudit({
       action: 'FUNDING_REVIEW_REQUIRED',
@@ -436,6 +444,8 @@ export async function confirmFunding(
         paidAt: verification.paidAt ?? new Date(),
         verifiedAt: new Date(),
         creditedAt: new Date(),
+        reviewReason: null,
+        failureReason: null,
         gatewayReference: verification.gatewayReference ?? funding.gatewayReference,
         gatewayPayload: sanitizeProviderPayload(verification.raw) as Record<string, unknown>,
       },
