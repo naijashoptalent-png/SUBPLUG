@@ -31,6 +31,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { ServiceIcon } from '@/components/ui/ServiceIcon';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
+import { DedicatedAccountCard } from '@/components/wallet/DedicatedAccountCard';
 import { useOpenWalletFunding } from '@/components/wallet/WalletFundingContext';
 
 const quickActions = [
@@ -185,6 +186,8 @@ export function OverviewPage() {
             </Link>
           ))}
         </div>
+
+        <DedicatedAccountCard />
 
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
           <Card>
