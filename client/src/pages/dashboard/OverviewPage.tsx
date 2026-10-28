@@ -65,6 +65,8 @@ export function OverviewPage() {
           <p className="text-sm text-muted">Here’s your wallet and what happened recently.</p>
         </div>
 
+        <DedicatedAccountCard />
+
         <SandboxNotice />
 
         <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
@@ -186,8 +188,6 @@ export function OverviewPage() {
             </Link>
           ))}
         </div>
-
-        <DedicatedAccountCard />
 
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
           <Card>
