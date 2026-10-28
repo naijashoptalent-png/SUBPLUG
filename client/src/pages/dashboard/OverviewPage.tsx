@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -32,7 +31,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { ServiceIcon } from '@/components/ui/ServiceIcon';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
-import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
+import { useOpenWalletFunding } from '@/components/wallet/WalletFundingContext';
 
 const quickActions = [
   { to: '/dashboard/airtime', label: 'Airtime', copy: 'Top up a phone', icon: Phone, classes: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
@@ -44,7 +43,7 @@ const quickActions = [
 export function OverviewPage() {
   const { user } = useAuth();
   const summaryQuery = useDashboardSummary();
-  const [fundOpen, setFundOpen] = useState(false);
+  const openWalletFunding = useOpenWalletFunding();
   const summary = summaryQuery.data;
   const monthlySpendMinor = summary?.monthlyActivity.reduce((total, day) => total + day.amountMinor, 0) ?? 0;
 
@@ -97,7 +96,7 @@ export function OverviewPage() {
 
               <div className="mt-6 flex flex-wrap gap-2">
                 <Button
-                  onClick={() => setFundOpen(true)}
+                  onClick={openWalletFunding}
                   className="bg-white text-brand-900 hover:bg-white/90"
                   leftIcon={<Plus className="h-4 w-4" />}
                 >
@@ -362,8 +361,6 @@ export function OverviewPage() {
           </div>
         </div>
       </div>
-
-      <FundWalletDialog open={fundOpen} onOpenChange={setFundOpen} />
     </>
   );
 }

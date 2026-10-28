@@ -17,7 +17,7 @@ import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { StatCard } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
-import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
+import { useOpenWalletFunding } from '@/components/wallet/WalletFundingContext';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { useFundings, useLedger, useWallet } from '@/hooks/useWallet';
 import { formatNaira, formatPaymentGateway, formatRelative, LEDGER_LABELS } from '@/lib/format';
@@ -34,7 +34,7 @@ const ledgerTypes: Array<{ value: '' | LedgerType; label: string }> = [
 ];
 
 export function WalletPage() {
-  const [fundOpen, setFundOpen] = useState(false);
+  const openWalletFunding = useOpenWalletFunding();
   const [tab, setTab] = useState<'ledger' | 'fundings'>('ledger');
   const [page, setPage] = useState(1);
   const [type, setType] = useState<'' | LedgerType>('');
@@ -66,7 +66,7 @@ export function WalletPage() {
         title="Wallet"
         description="Every credit and debit is recorded in an append-only ledger. Your balance is a projection of those entries."
         actions={
-          <Button onClick={() => setFundOpen(true)} leftIcon={<Plus className="h-4 w-4" />}>
+          <Button onClick={openWalletFunding} leftIcon={<Plus className="h-4 w-4" />}>
             Fund wallet
           </Button>
         }
@@ -278,7 +278,7 @@ export function WalletPage() {
               icon={ReceiptText}
               title="No ledger entries match"
               description="Try clearing the filters or fund your wallet to create the first entry."
-              action={<Button variant="outline" size="sm" onClick={() => setFundOpen(true)}>Fund wallet</Button>}
+              action={<Button variant="outline" size="sm" onClick={openWalletFunding}>Fund wallet</Button>}
             />
           )
         ) : fundingsQuery.isLoading && !fundingsQuery.data ? (
@@ -332,7 +332,7 @@ export function WalletPage() {
             icon={Banknote}
             title="No funding attempts"
             description="When you start a top-up, the attempt and its gateway status appear here."
-            action={<Button variant="outline" size="sm" onClick={() => setFundOpen(true)}>Fund wallet</Button>}
+            action={<Button variant="outline" size="sm" onClick={openWalletFunding}>Fund wallet</Button>}
           />
         )}
       </div>
@@ -365,8 +365,6 @@ export function WalletPage() {
           </div>
         </div>
       </Card>
-
-      <FundWalletDialog open={fundOpen} onOpenChange={setFundOpen} />
     </>
   );
 }

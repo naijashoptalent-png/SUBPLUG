@@ -27,6 +27,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { NotificationBell } from './NotificationBell';
 import { UserMenu } from './UserMenu';
 import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
+import { WalletFundingProvider } from '@/components/wallet/WalletFundingContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { formatNaira } from '@/lib/format';
@@ -255,8 +256,9 @@ export function DashboardLayout() {
         </div>
       ) : null}
 
-      <div className="lg:pl-[17rem]">
-        <header className="sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur-xl">
+      <WalletFundingProvider value={() => setFundOpen(true)}>
+        <div className="lg:pl-[17rem]">
+          <header className="sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur-xl">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"
@@ -295,12 +297,12 @@ export function DashboardLayout() {
               <UserMenu />
             </div>
           </div>
-        </header>
+          </header>
 
-        <main id="main" className="mx-auto w-full max-w-[82rem] px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
-          <Outlet />
-        </main>
-      </div>
+          <main id="main" className="mx-auto w-full max-w-[82rem] px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
+            <Outlet />
+          </main>
+        </div>
 
       <nav
         className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-raised/95 backdrop-blur-xl lg:hidden"
@@ -341,6 +343,7 @@ export function DashboardLayout() {
       </nav>
 
       <FundWalletDialog open={fundOpen} onOpenChange={setFundOpen} />
+      </WalletFundingProvider>
     </div>
   );
 }
