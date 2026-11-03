@@ -126,6 +126,23 @@ function normaliseStatus(value: unknown): ProviderOutcome | null {
   return null;
 }
 
+/**
+ * SME API may return the account balance as a Naira-formatted string (for
+ * example `₦1,250.50` or `1,250.50`) instead of a JSON number. Accept only
+ * conventional numeric formatting; malformed values must still fail health
+ * checks rather than masking a provider response problem.
+ */
+export function parseSmeBalance(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value !== 'string') return null;
+
+  const numeric = value.trim().replace(/(?:₦|NGN)/gi, '').replace(/,/g, '').trim();
+  if (!/^-?(?:\d+|\d*\.\d+)$/.test(numeric)) return null;
+
+  const balance = Number(numeric);
+  return Number.isFinite(balance) ? balance : null;
+}
+
 export function normaliseSmeOutcome(
   body: unknown,
   options: { allowGenericStatus?: boolean } = {}
@@ -792,8 +809,8 @@ export class SmeApiProvider implements VtuProvider {
       if (normaliseStatus(root.status) !== 'SUCCESS') {
         return { healthy: false, message: String(firstDefined(root.msg, root.message) ?? 'SME API health check failed') };
       }
-      const balance = Number(root.balance);
-      if (!Number.isFinite(balance)) {
+      const balance = parseSmeBalance(root.balance);
+      if (balance === null) {
         return { healthy: false, message: 'SME API did not return a wallet balance' };
       }
       return {
