@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-labelledby="title desc">
+  <title id="title">SubPlug</title>
+  <desc id="desc">SubPlug power plug and play logo</desc>
+  <defs>
+    <linearGradient id="plug" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1687d4"/><stop offset="1" stop-color="#0867b7"/></linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#plug)" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="18" d="M34 137V91M66 137V60M98 137V32M130 117V24M162 117V24"/>
+    <path stroke-width="22" d="M118 93h111a16 16 0 0 1 0 32h-10v20a52 52 0 0 1-104 0v-20h-10a16 16 0 0 1 0-32h13z"/>
+    <path stroke-width="13" d="M145 143h41a13 13 0 0 1 13 13v19a13 13 0 0 1-13 13h-41a13 13 0 0 1-13-13v-19a13 13 0 0 1 13-13z" stroke="#0ba568"/>
+    <path fill="#0ba568" stroke="none" d="m156 157 17 9-17 10z"/>
+    <path stroke-width="16" d="M115 196v10H57"/>
+  </g>
+  <path fill="#1687d4" d="m173 22 18 0-10 25h15l-27 40 7-28h-14z"/>
+  <text x="270" y="143" fill="#0867b7" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="-7">Sub</text>
+  <text x="458" y="143" fill="#0ba568" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="-7">Plug</text>
+  <text x="468" y="177" fill="#466b85" font-family="Arial, Helvetica, sans-serif" font-size="19" letter-spacing=".4">subplug.com.ng</text>
+</svg>

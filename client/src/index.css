@@ -46,7 +46,7 @@
     min-height: 100%;
     overflow-x: clip;
     text-rendering: optimizeLegibility;
-    background-image: radial-gradient(circle at 100% 0%, rgb(203 237 136 / 0.15), transparent 28rem);
+    background-image: none;
   }
 
   ::selection {
@@ -112,11 +112,11 @@
   }
 
   .card {
-    @apply rounded-[1.65rem] border border-line/90 bg-raised shadow-soft;
+    @apply rounded-2xl border border-line bg-raised;
   }
 
   .card-hover {
-    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-lift;
+    @apply transition-colors duration-200 hover:border-brand-400/50 hover:bg-brand-50/30 dark:hover:bg-brand-500/5;
   }
 
   .label {
@@ -128,7 +128,7 @@
   }
 
   .field {
-    @apply w-full rounded-xl border border-line bg-surface/70 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-subtle transition focus:border-brand-500 focus:bg-raised focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply min-h-12 w-full rounded-xl border border-line bg-raised px-4 py-3 text-base text-ink placeholder:text-subtle transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .field-error {
@@ -136,11 +136,11 @@
   }
 
   .section-eyebrow {
-    @apply inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-brand-800 dark:text-brand-200;
+    @apply inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-brand-800 dark:text-brand-200;
   }
 
   .prose-page {
-    @apply text-[15px] leading-7 text-muted;
+    @apply text-base leading-6 text-muted;
   }
   .prose-page h2 {
     @apply mt-10 text-xl font-semibold text-ink;
@@ -223,11 +223,11 @@
   }
 
   .app-shell {
-    background-image: radial-gradient(circle at 78% -10%, rgb(203 237 136 / 0.2), transparent 30rem);
+    background-image: none;
   }
 
   .balance-card {
-    background-image: radial-gradient(circle at 90% 0%, rgb(203 237 136 / 0.28), transparent 38%), linear-gradient(135deg, #14270a 0%, #263d0d 58%, #486d12 100%);
+    background: #263d0d;
   }
 
   .hero-panel {

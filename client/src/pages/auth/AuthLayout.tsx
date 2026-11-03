@@ -22,7 +22,7 @@ export function AuthLayout() {
         </div>
         <div className="relative z-10 flex items-center justify-between">
           <Link to="/" aria-label="SubPlug home" className="text-white [&_span]:text-white">
-            <BrandMark name={settings.branding.name} />
+            <BrandMark name={settings.branding.name} variant="inverse" className="[&_img]:h-12 [&_img]:max-w-[12.5rem]" />
           </Link>
           <span className="rounded-full border border-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
             Secure account
@@ -73,7 +73,7 @@ export function AuthLayout() {
           </Link>
           <div className="flex items-center gap-2">
             <span className="lg:hidden">
-              <BrandMark name={settings.branding.name} showName={false} />
+              <BrandMark name={settings.branding.name} variant="mark" />
             </span>
             <ThemeToggle />
           </div>

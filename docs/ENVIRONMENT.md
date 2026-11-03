@@ -89,7 +89,7 @@ Production requires a replica set. A single-node replica set is acceptable for a
 | `COOKIE_SAME_SITE` | `lax` | `lax`, `strict`, or `none` |
 | `TRUST_PROXY` | `1` | See above; required for correct secure-cookie and client-IP handling behind a proxy |
 
-`COOKIE_SAME_SITE=none` requires HTTPS. Use it only when the web app and API are on different sites (for example `app.example.com` and `api.example.com` are same-site, so `lax` is usually sufficient; entirely different registrable domains require `none`).
+`COOKIE_SAME_SITE=none` requires HTTPS. Use it only when the web app and API are on different sites (for example `app.example.com` and `api.example.com` are same-site, so `lax` is usually sufficient; entirely different registrable domains require `none`). **Safari on iOS blocks third-party cookies even with `none`, so a split-site deployment will fail for iPhone users.** Prefer a same-origin API or an `api.example.com` subdomain of the SPA's registrable domain.
 
 The access and refresh cookies are HTTP-only. The CSRF cookie is intentionally readable by JavaScript.
 

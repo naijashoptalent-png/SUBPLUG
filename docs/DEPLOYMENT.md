@@ -39,7 +39,7 @@ Same-origin deployment (SPA and API under one domain, e.g. `https://subplug.exam
 Supported alternatives:
 
 - Two subdomains: `app.example.com` and `api.example.com` with `COOKIE_DOMAIN=.example.com` and `COOKIE_SAME_SITE=lax`.
-- Separate sites: static host plus API domain with HTTPS, `COOKIE_SAME_SITE=none`, and explicit CORS origins.
+- Separate sites: **not supported for iPhone/Safari users.** Safari blocks third-party cookies even with `COOKIE_SAME_SITE=none`, so sign-up and sign-in fail on iOS. Use the same origin or a subdomain of the SPA's registrable domain instead.
 
 ---
 
@@ -189,6 +189,8 @@ See [ENVIRONMENT.md](ENVIRONMENT.md) for descriptions and validation rules.
 | Same origin (`app.example.com/api`) | `https://app.example.com` | `https://app.example.com` | empty | `lax` | empty |
 | Subdomains | `https://api.example.com` | `https://app.example.com` | `.example.com` | `lax` | `https://api.example.com` |
 | Different sites | `https://api.vendor.com` | `https://app.customer.com` | empty | `none` | `https://api.vendor.com` |
+
+> **iOS Safari:** the "Different sites" row fails for iPhone users because Safari blocks all third-party cookies, regardless of `SameSite=None; Secure`. Prefer the same-origin or subdomain rows. Use the different-sites row only for non-browser clients.
 
 For the different-sites case:
 

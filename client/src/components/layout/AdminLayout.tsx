@@ -94,7 +94,7 @@ function AdminSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center gap-2 px-5">
         <Link to="/admin" onClick={onNavigate} aria-label="SubPlug operations">
-          <BrandMark />
+          <BrandMark variant="full" className="[&_img]:h-10 [&_img]:max-w-[10rem]" />
         </Link>
       </div>
 

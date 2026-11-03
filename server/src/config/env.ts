@@ -199,6 +199,13 @@ if (isProduction) {
   if (env.COOKIE_SAME_SITE === 'none' && !env.API_BASE_URL.startsWith('https://')) {
     throw new Error('SameSite=None cookies require HTTPS. Set API_BASE_URL to an https URL.');
   }
+  if (env.COOKIE_SAME_SITE === 'none') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      'COOKIE_SAME_SITE=none: iOS Safari blocks third-party cookies even with SameSite=None. ' +
+        'Serve the API from the same origin or an api.<your-domain> subdomain and use COOKIE_SAME_SITE=lax.'
+    );
+  }
 }
 
 export const corsOrigins = [

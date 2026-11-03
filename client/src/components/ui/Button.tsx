@@ -6,25 +6,25 @@ export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'dan
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const base =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition duration-200 disabled:pointer-events-none disabled:opacity-55 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-medium transition-colors duration-200 disabled:pointer-events-none disabled:opacity-55 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface';
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand-800 text-white shadow-sm hover:-translate-y-0.5 hover:bg-brand-900 hover:shadow-soft dark:bg-brand-400 dark:text-brand-950 dark:hover:bg-brand-300',
+    'bg-brand-800 text-white hover:bg-brand-900 dark:bg-brand-400 dark:text-brand-950 dark:hover:bg-brand-300',
   secondary:
     'bg-brand-50 text-brand-800 hover:bg-brand-100 dark:bg-brand-500/15 dark:text-brand-200 dark:hover:bg-brand-500/25',
   outline:
-    'border border-line bg-raised text-ink hover:-translate-y-0.5 hover:border-brand-400/70 hover:bg-brand-50/70 hover:shadow-soft dark:hover:bg-brand-500/10',
+    'border border-line bg-raised text-ink hover:border-brand-400/70 hover:bg-brand-50/70 dark:hover:bg-brand-500/10',
   ghost: 'text-muted hover:bg-surface hover:text-ink',
   danger: 'bg-danger text-white hover:opacity-90',
   link: 'text-brand-700 underline-offset-4 hover:underline dark:text-brand-300',
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 text-[13px]',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-12 px-5 text-[15px]',
-  icon: 'h-10 w-10',
+  sm: 'h-11 px-4 text-sm',
+  md: 'h-12 px-4 text-base',
+  lg: 'h-14 px-6 text-base',
+  icon: 'h-11 w-11',
 };
 
 export function buttonStyles(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', className?: string) {

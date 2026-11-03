@@ -31,7 +31,7 @@ export default {
       },
       fontFamily: {
         sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'DM Sans', 'ui-sans-serif', 'sans-serif'],
+        display: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       boxShadow: {

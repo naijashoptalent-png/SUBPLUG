@@ -193,7 +193,7 @@ export function HomePage() {
               <div className="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-white/5" aria-hidden="true" />
 
               <div className="relative flex items-start justify-between">
-                <BrandMark showName={false} className="[&>span]:bg-white/10" />
+                <BrandMark variant="mark" />
                 <div className="text-right">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">SubPlug wallet</p>
                   <p className="mt-1 text-[11px] text-white/70">NGN · Nigeria</p>

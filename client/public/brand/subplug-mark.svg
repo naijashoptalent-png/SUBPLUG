@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-labelledby="title">
+  <title id="title">SubPlug</title>
+  <defs><linearGradient id="plug" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1687d4"/><stop offset="1" stop-color="#0867b7"/></linearGradient></defs>
+  <g fill="none" stroke="url(#plug)" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="18" d="M33 139V91M65 139V60M97 139V32M129 117V24M161 117V24"/>
+    <path stroke-width="22" d="M117 93h111a16 16 0 0 1 0 32h-10v20a52 52 0 0 1-104 0v-20h-10a16 16 0 0 1 0-32h13z"/>
+    <path stroke-width="13" d="M144 143h41a13 13 0 0 1 13 13v19a13 13 0 0 1-13 13h-41a13 13 0 0 1-13-13v-19a13 13 0 0 1 13-13z" stroke="#0ba568"/>
+    <path fill="#0ba568" stroke="none" d="m155 157 17 9-17 10z"/>
+    <path stroke-width="16" d="M114 196v10H56"/>
+  </g>
+  <path fill="#1687d4" d="m172 22 18 0-10 25h15l-27 40 7-28h-14z"/>
+</svg>

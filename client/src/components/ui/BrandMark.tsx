@@ -1,22 +1,32 @@
-import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type BrandVariant = 'full' | 'mark' | 'inverse';
 
 export function BrandMark({
   className,
   showName = true,
   name = 'SubPlug',
+  variant,
 }: {
   className?: string;
   showName?: boolean;
   name?: string;
+  variant?: BrandVariant;
 }) {
+  const selectedVariant = variant ?? (showName ? 'full' : 'mark');
+  const src = selectedVariant === 'mark'
+    ? '/brand/subplug-mark.svg'
+    : selectedVariant === 'inverse'
+      ? '/brand/subplug-logo-inverse.svg'
+      : '/brand/subplug-logo.svg';
+
   return (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <span className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-sm dark:from-brand-400 dark:to-brand-600 dark:text-brand-950">
-        <span className="absolute -right-2 -top-2 h-5 w-5 rounded-full border border-white/25" aria-hidden="true" />
-        <Zap className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-      </span>
-      {showName ? <span className="font-display text-lg font-bold tracking-tight text-ink">{name}</span> : null}
+    <span className={cn('inline-flex items-center', className)} title={name}>
+      <img
+        src={src}
+        alt={name}
+        className={cn('block w-auto object-contain', selectedVariant === 'mark' ? 'h-9 aspect-square' : 'h-10 max-w-[10.5rem]')}
+      />
     </span>
   );
 }

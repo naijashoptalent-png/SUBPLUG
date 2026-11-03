@@ -10,6 +10,11 @@ import { writeAudit } from '../services/auditService';
 
 export const getCsrf = asyncHandler(async (_req: Request, res: Response) => {
   const csrfToken = generateCsrfToken();
+  // Never let a browser, CDN, or reverse proxy cache a token response. A cached
+  // body served without its matching Set-Cookie causes persistent CSRF failures.
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   setCsrfCookie(res, csrfToken);
   res.json({ data: { csrfToken } });
 });

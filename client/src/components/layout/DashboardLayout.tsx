@@ -82,14 +82,12 @@ function SidebarContent({
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center px-5">
         <Link to="/dashboard" onClick={onNavigate} aria-label="SubPlug dashboard">
-          <BrandMark />
+          <BrandMark variant="full" className="[&_img]:h-10 [&_img]:max-w-[10rem]" />
         </Link>
       </div>
 
       <div className="px-4 pb-4">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 via-brand-700 to-brand-600 p-4 text-white shadow-glow dark:from-brand-600 dark:via-brand-700 dark:to-brand-900">
-          <div className="absolute -right-6 -top-8 h-24 w-24 rounded-full border border-white/15" aria-hidden="true" />
-          <div className="absolute -bottom-10 -left-4 h-24 w-24 rounded-full bg-white/5" aria-hidden="true" />
+        <div className="rounded-2xl bg-brand-800 p-4 text-white dark:bg-brand-600">
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">Wallet balance</p>
           <p className="mt-1 font-display text-2xl font-semibold tracking-tight">
             {balance === undefined ? '₦—' : formatNaira(balance)}
@@ -100,7 +98,7 @@ function SidebarContent({
               onNavigate?.();
               onFundWallet();
             }}
-            className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/15 px-3 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/25"
+            className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-white/15 px-4 text-sm font-medium text-white transition hover:bg-white/25"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             Fund wallet
@@ -263,7 +261,7 @@ export function DashboardLayout() {
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-raised text-muted lg:hidden"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line bg-raised text-muted lg:hidden"
               aria-label="Open navigation menu"
             >
               <Menu className="h-4 w-4" aria-hidden="true" />
@@ -287,7 +285,7 @@ export function DashboardLayout() {
               <button
                 type="button"
                 onClick={() => setFundOpen(true)}
-                className="hidden h-9 items-center gap-1.5 rounded-xl bg-brand-700 px-3 text-xs font-semibold text-white transition hover:bg-brand-800 dark:bg-brand-500 dark:text-brand-950 dark:hover:bg-brand-400 md:inline-flex"
+                className="hidden h-11 items-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-medium text-white transition hover:bg-brand-800 dark:bg-brand-500 dark:text-brand-950 dark:hover:bg-brand-400 md:inline-flex"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 Fund

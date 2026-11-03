@@ -53,7 +53,8 @@ export function PublicLayout() {
       <header className="sticky top-0 z-40 border-b border-line/70 bg-surface/80 backdrop-blur-xl">
         <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
           <Link to="/" aria-label="SubPlug home" className="rounded-xl transition hover:opacity-80">
-            <BrandMark name={settings.branding.name} className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
+            <BrandMark name={settings.branding.name} variant="full" className="hidden sm:inline-flex" />
+            <BrandMark name={settings.branding.name} variant="mark" className="sm:hidden" />
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
@@ -138,7 +139,7 @@ export function PublicLayout() {
       <footer className="border-t border-line/80 bg-raised/80">
         <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
-            <BrandMark name={settings.branding.name} />
+            <BrandMark name={settings.branding.name} variant="full" className="[&_img]:h-12 [&_img]:max-w-[12.5rem]" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
               {settings.branding.tagline} Airtime, mobile data, electricity and cable TV paid from one secure wallet.
             </p>

@@ -201,7 +201,7 @@ Fix matrix:
 | --- | --- |
 | Same origin | `COOKIE_DOMAIN` empty, `COOKIE_SAME_SITE=lax` |
 | Subdomains of one site | `COOKIE_DOMAIN=.example.com`, `COOKIE_SAME_SITE=lax` |
-| Different sites | `COOKIE_SAME_SITE=none`, HTTPS, likely empty `COOKIE_DOMAIN` |
+| Different sites | **Not supported on iOS Safari.** Move the API to a subdomain of the SPA's registrable domain (for example `api.example.com`) and use `lax`. |
 
 After changing cookie settings, sign out/in and clear old cookies.
 
@@ -216,6 +216,8 @@ Fixes:
 3. Confirm a proxy is not stripping the `X-CSRF-Token` header or rewriting cookies.
 4. If the cookie expired, fetch a new token and retry. The bundled client does this once automatically.
 5. After login/logout, reset the cached CSRF token if you are writing a custom client.
+
+**iPhone/Safari only:** Safari blocks all third-party cookies, so `SameSite=None; Secure` does not help. If the SPA and API use different registrable domains (for example `www.example.com` and `my-api.onrender.com`), iPhone users get this error on every sign-up while Chrome on Android works. Serve the API from the same origin or from a subdomain of the SPA's registrable domain (for example `api.example.com`) and set `COOKIE_SAME_SITE=lax`.
 
 ### Refresh loop / session expired message
 
