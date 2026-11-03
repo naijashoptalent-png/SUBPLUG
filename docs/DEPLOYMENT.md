@@ -164,11 +164,8 @@ RECONCILE_INTERVAL_MS=300000
 CATALOGUE_SYNC_INTERVAL_MS=900000
 
 EMAIL_FROM="SubPlug <no-reply@example.com>"
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_SECURE=false
-EMAIL_USER=<smtp-user>
-EMAIL_PASSWORD=<smtp-password>
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=<resend-api-key>
 EXPOSE_DEV_EMAILS=false
 
 LOG_LEVEL=info
@@ -482,7 +479,7 @@ Logs are structured JSON in production. Ship them to your log platform and retai
 - [ ] MongoDB/Redis are not publicly reachable.
 - [ ] Admin accounts use unique strong passwords and TOTP where possible.
 - [ ] Rate limits reviewed for expected traffic.
-- [ ] SMTP configured; verification and reset emails tested.
+- [ ] Resend domain verified, API key configured, and verification/reset emails tested.
 - [ ] Audit log and reconciliation pages accessible to the right staff.
 
 ### Rotating exposed provider keys

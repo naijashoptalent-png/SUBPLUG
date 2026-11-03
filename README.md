@@ -86,7 +86,7 @@ SubPlug is a production-oriented MERN (MongoDB, Express, React, Node.js) platfor
 | Data fetching | TanStack React Query |
 | Forms | React Hook Form + Zod |
 | Tests | Vitest, Supertest, Testing Library |
-| Email | Nodemailer (SMTP optional in development) |
+| Email | Resend (transactional email; SMTP fallback supported) |
 
 The project is an npm-workspaces monorepo.
 
@@ -129,7 +129,7 @@ The project is an npm-workspaces monorepo.
 - npm 10 or newer.
 - MongoDB 6 or newer. A locally installed standalone server is sufficient for development; production requires a replica set.
 - Optional: Redis 6+ when `USE_QUEUES=true`.
-- Optional: SMTP credentials if you want real email delivery.
+- A Resend API key and verified sending domain for real email delivery.
 
 ### 1. Install dependencies
 
@@ -362,7 +362,7 @@ Serve `client/dist/` from a static host or CDN, with a SPA rewrite to `index.htm
 - The payment integration is production-shaped (initialise, verify, signed webhooks, deduplication) but has only been exercised against the mock provider; certify Paystack and/or Flutterwave with their test and live keys before accepting customers.
 - There is no KYC, AML, sanctions screening, or credit facility. Those are business and regulatory requirements outside this codebase.
 - There is no SMS gateway integration; notification records are in-app only.
-- Transactional email requires SMTP configuration. Without it, development logs email previews instead of sending.
+- Transactional email uses Resend by default. Verify the sender domain and configure `RESEND_API_KEY`; without credentials, development logs email previews instead of sending.
 - The in-process scheduler must not be used with multiple API instances. Enable Redis/BullMQ for horizontal scaling.
 - There is no built-in object storage, dispute evidence upload, or chargeback workflow.
 - Live data prices come from the selected provider and can change; the scheduled sync keeps the catalogue fresh, but provider-side price changes between syncs remain a commercial risk.

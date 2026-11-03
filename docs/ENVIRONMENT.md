@@ -216,14 +216,16 @@ The catalogue refresh keeps live data-plan prices and availability current. A fa
 | Variable | Default | Description |
 | --- | --- | --- |
 | `EMAIL_FROM` | `SubPlug <no-reply@example.com>` | Sender header |
-| `EMAIL_HOST` | empty | SMTP host. When empty, email is skipped |
+| `EMAIL_PROVIDER` | `resend` | Transactional provider: `resend` (recommended) or `smtp` |
+| `RESEND_API_KEY` | empty | Resend API key; required in production when `EMAIL_PROVIDER=resend` |
+| `EMAIL_HOST` | empty | SMTP host; required only when `EMAIL_PROVIDER=smtp` |
 | `EMAIL_PORT` | `587` | SMTP port |
 | `EMAIL_SECURE` | `false` | `true` for implicit TLS (usually port 465) |
 | `EMAIL_USER` | empty | SMTP username |
 | `EMAIL_PASSWORD` | empty | SMTP password |
 | `EXPOSE_DEV_EMAILS` | `false` | Development only: return verification/reset URLs in API responses |
 
-Without SMTP, the API logs password-reset email previews in development and logs an error in production. Never enable `EXPOSE_DEV_EMAILS` in production.
+For Resend, verify the domain in `EMAIL_FROM` and create an API key in the Resend dashboard. Without the selected provider's credentials, the API logs password-reset email previews in development; production refuses to start. Never enable `EXPOSE_DEV_EMAILS` in production.
 
 ### Security and operations
 
@@ -233,7 +235,7 @@ Without SMTP, the API logs password-reset email previews in development and logs
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Global rate-limit window |
 | `RATE_LIMIT_MAX` | `300` | Global requests per window |
 | `AUTH_RATE_LIMIT_MAX` | `20` | Failed auth attempts per 15-minute window |
-| `TRANSACTION_EMAIL_ALERTS` | `true` | Send purchase/funding receipts when SMTP is configured |
+| `TRANSACTION_EMAIL_ALERTS` | `true` | Send purchase/funding receipts when the configured email provider is available |
 | `METRICS_TOKEN` | empty | Reserved for a future metrics endpoint; currently unused |
 
 Rate limits use the Express `trust proxy` configuration. If `TRUST_PROXY` is wrong, clients may share a proxy IP and be limited together, or spoofed IP headers may be trusted.

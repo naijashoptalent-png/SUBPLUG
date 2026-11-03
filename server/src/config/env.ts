@@ -107,6 +107,8 @@ const envSchema = z.object({
   CATALOGUE_SYNC_INTERVAL_MS: int(900000, 60000),
 
   EMAIL_FROM: z.string().default('SubPlug <no-reply@example.com>'),
+  EMAIL_PROVIDER: z.enum(['resend', 'smtp']).default('resend'),
+  RESEND_API_KEY: z.string().optional().default(''),
   EMAIL_HOST: z.string().optional().default(''),
   EMAIL_PORT: int(587, 1),
   EMAIL_SECURE: bool(false),
@@ -205,6 +207,12 @@ if (isProduction) {
       'COOKIE_SAME_SITE=none: iOS Safari blocks third-party cookies even with SameSite=None. ' +
         'Serve the API from the same origin or an api.<your-domain> subdomain and use COOKIE_SAME_SITE=lax.'
     );
+  }
+  if (env.EMAIL_PROVIDER === 'resend' && !env.RESEND_API_KEY) {
+    throw new Error('The Resend email provider requires RESEND_API_KEY.');
+  }
+  if (env.EMAIL_PROVIDER === 'smtp' && (!env.EMAIL_HOST || !env.EMAIL_USER)) {
+    throw new Error('The SMTP email provider requires EMAIL_HOST and EMAIL_USER.');
   }
 }
 

@@ -1,9 +1,17 @@
 import nodemailer, { Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 import { env, isProduction } from '../config/env';
 import { logger } from '../config/logger';
 import { formatNaira } from '../utils/money';
 
 let transporter: Transporter | null = null;
+let resend: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (!env.RESEND_API_KEY) return null;
+  if (!resend) resend = new Resend(env.RESEND_API_KEY);
+  return resend;
+}
 
 function getTransport(): Transporter | null {
   if (!env.EMAIL_HOST || !env.EMAIL_USER) return null;
@@ -28,6 +36,37 @@ interface MailInput {
 }
 
 async function sendMail(input: MailInput): Promise<void> {
+  if (env.EMAIL_PROVIDER === 'resend') {
+    const client = getResend();
+    if (!client) {
+      if (!isProduction) {
+        logger.info({ to: input.to, subject: input.subject, preview: input.text.slice(0, 500) }, '[DEV EMAIL] not sent - Resend is not configured');
+        return;
+      }
+      logger.error({ to: input.to, subject: input.subject }, 'Resend is not configured; email not sent');
+      return;
+    }
+
+    try {
+      const { data, error } = await client.emails.send({
+        from: env.EMAIL_FROM,
+        to: [input.to],
+        subject: input.subject,
+        text: input.text,
+        html: input.html,
+      });
+      if (error) {
+        logger.error({ err: error, to: input.to, subject: input.subject }, 'Resend failed to send email');
+        return;
+      }
+      logger.info({ emailId: data?.id, to: input.to, subject: input.subject }, 'Email accepted by Resend');
+    } catch (error) {
+      // Email must never break a financial workflow.
+      logger.error({ err: error, to: input.to, subject: input.subject }, 'Failed to send email with Resend');
+    }
+    return;
+  }
+
   const transport = getTransport();
   if (!transport) {
     if (!isProduction) {
