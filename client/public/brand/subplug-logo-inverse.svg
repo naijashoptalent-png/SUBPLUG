@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-labelledby="title">
   <title id="title">SubPlug</title>
-  <defs><linearGradient id="plug" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6fc7ff"/><stop offset="1" stop-color="#28a5f5"/></linearGradient></defs>
+  <defs><linearGradient id="plug" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e3f5bf"/><stop offset="1" stop-color="#96ca32"/></linearGradient></defs>
   <g fill="none" stroke="url(#plug)" stroke-linecap="round" stroke-linejoin="round">
     <path stroke-width="18" d="M34 137V91M66 137V60M98 137V32M130 117V24M162 117V24"/><path stroke-width="22" d="M118 93h111a16 16 0 0 1 0 32h-10v20a52 52 0 0 1-104 0v-20h-10a16 16 0 0 1 0-32h13z"/>
-    <path stroke="#52e0a1" stroke-width="13" d="M145 143h41a13 13 0 0 1 13 13v19a13 13 0 0 1-13 13h-41a13 13 0 0 1-13-13v-19a13 13 0 0 1 13-13z"/><path fill="#52e0a1" stroke="none" d="m156 157 17 9-17 10z"/><path stroke-width="16" d="M115 196v10H57"/>
+    <path stroke="#afe051" stroke-width="13" d="M145 143h41a13 13 0 0 1 13 13v19a13 13 0 0 1-13 13h-41a13 13 0 0 1-13-13v-19a13 13 0 0 1 13-13z"/><path fill="#afe051" stroke="none" d="m156 157 17 9-17 10z"/><path stroke-width="16" d="M115 196v10H57"/>
   </g>
-  <path fill="#6fc7ff" d="m173 22 18 0-10 25h15l-27 40 7-28h-14z"/>
-  <text x="270" y="143" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="-7">Sub</text><text x="458" y="143" fill="#52e0a1" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="-7">Plug</text><text x="468" y="177" fill="#b7d4e7" font-family="Arial, Helvetica, sans-serif" font-size="19" letter-spacing=".4">subplug.com.ng</text>
+  <path fill="#e3f5bf" d="m173 22 18 0-10 25h15l-27 40 7-28h-14z"/>
+  <text x="270" y="143" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="-7">Sub</text><text x="458" y="143" fill="#afe051" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="-7">Plug</text><text x="468" y="177" fill="#e3f5bf" font-family="Arial, Helvetica, sans-serif" font-size="19" letter-spacing=".4">subplug.com.ng</text>
 </svg>

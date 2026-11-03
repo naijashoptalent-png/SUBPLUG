@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SubPlug">
-  <defs><linearGradient id="background" x1="8" y1="4" x2="57" y2="61" gradientUnits="userSpaceOnUse"><stop stop-color="#1588d6"/><stop offset="1" stop-color="#075fae"/></linearGradient></defs>
+  <defs><linearGradient id="background" x1="8" y1="4" x2="57" y2="61" gradientUnits="userSpaceOnUse"><stop stop-color="#486d12"/><stop offset="1" stop-color="#263d0d"/></linearGradient></defs>
   <rect width="64" height="64" rx="18" fill="url(#background)"/>
   <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
     <path stroke-width="4.5" d="M11 37V25M19 37V17M27 31V13M35 31V13" opacity=".95"/>
     <path stroke-width="5" d="M25 30h20a4 4 0 0 1 0 8h-2v4a10 10 0 0 1-20 0v-4h-2a4 4 0 0 1 0-8h4z"/>
-    <path stroke="#75efb4" stroke-width="3.5" d="M28.5 38h8a3 3 0 0 1 3 3v3.5a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3V41a3 3 0 0 1 3-3z"/>
+    <path stroke="#cbed88" stroke-width="3.5" d="M28.5 38h8a3 3 0 0 1 3 3v3.5a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3V41a3 3 0 0 1 3-3z"/>
     <path stroke-width="4" d="M23 52v2H14"/>
   </g>
-  <path fill="#75efb4" d="m31 41 4.5 2.5-4.5 2.5z"/><path fill="#d9f3ff" d="m38 11 5 0-3 7h4l-7 10 2-7h-4z"/>
+  <path fill="#cbed88" d="m31 41 4.5 2.5-4.5 2.5z"/><path fill="#e3f5bf" d="m38 11 5 0-3 7h4l-7 10 2-7h-4z"/>
 </svg>
