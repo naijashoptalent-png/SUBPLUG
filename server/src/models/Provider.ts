@@ -9,6 +9,8 @@ export interface IProvider extends Document {
   isSandbox: boolean;
   health: 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN';
   lastCheckedAt?: Date | null;
+  lastBalanceMinor?: number | null;
+  lastBalanceCheckedAt?: Date | null;
   lastError?: string | null;
   errorCount: number;
   config?: Record<string, unknown>; // never store secrets here
@@ -26,6 +28,8 @@ const providerSchema = new Schema<IProvider>(
     isSandbox: { type: Boolean, default: true },
     health: { type: String, enum: ['HEALTHY', 'DEGRADED', 'DOWN', 'UNKNOWN'], default: 'UNKNOWN' },
     lastCheckedAt: { type: Date, default: null },
+    lastBalanceMinor: { type: Number, default: null },
+    lastBalanceCheckedAt: { type: Date, default: null },
     lastError: { type: String, default: null, maxlength: 500 },
     errorCount: { type: Number, default: 0 },
     config: { type: Schema.Types.Mixed, default: {} },

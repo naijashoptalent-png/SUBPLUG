@@ -907,6 +907,7 @@ export class MaskawaSubProvider implements VtuProvider {
       return {
         healthy: true,
         message: `MaskawaSub reachable. Provider wallet balance: ${formatNaira(snapshot.balanceMinor)}. Live purchases ${liveStatus}.`,
+        balanceMinor: snapshot.balanceMinor,
       };
     } catch (error) {
       return { healthy: false, message: error instanceof Error ? error.message : 'MaskawaSub is unreachable.' };

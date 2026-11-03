@@ -21,7 +21,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useAdminProviders, useCheckProviders, useSwitchProviderRoute } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDateTime, formatRelative } from '@/lib/format';
+import { formatDateTime, formatNaira, formatRelative } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import type { ProviderRouteOption, ProviderServiceRoute } from '@/types';
 
@@ -384,6 +384,7 @@ export function AdminProvidersPage() {
                   <th scope="col">Kind</th>
                   <th scope="col">Adapter</th>
                   <th scope="col">Health</th>
+                  <th scope="col">Wallet balance</th>
                   <th scope="col">Enabled</th>
                   <th scope="col">Last checked</th>
                   <th scope="col">Errors</th>
@@ -406,6 +407,11 @@ export function AdminProvidersPage() {
                     <td><Badge tone={provider.kind === 'VTU' ? 'brand' : 'info'}>{provider.kind}</Badge></td>
                     <td className="text-xs text-muted">{provider.adapter ?? '—'}</td>
                     <td><StatusBadge status={provider.health} /></td>
+                    <td className="whitespace-nowrap text-xs font-semibold text-ink">
+                      {provider.kind === 'VTU' && provider.lastBalanceMinor !== null && provider.lastBalanceMinor !== undefined
+                        ? formatNaira(provider.lastBalanceMinor)
+                        : '—'}
+                    </td>
                     <td><Badge tone={provider.enabled ? 'success' : 'neutral'}>{provider.enabled ? 'Yes' : 'No'}</Badge></td>
                     <td className="whitespace-nowrap text-xs text-muted">
                       {provider.lastCheckedAt ? formatRelative(provider.lastCheckedAt) : 'Never'}

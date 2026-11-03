@@ -345,6 +345,8 @@ export interface AdminOverview {
     enabled: boolean;
     isSandbox: boolean;
     lastCheckedAt: string | null;
+    lastBalanceMinor?: number | null;
+    lastBalanceCheckedAt?: string | null;
     lastError: string | null;
   }>;
 }
@@ -406,6 +408,8 @@ export interface ProviderInfo {
   isSandbox: boolean;
   health: 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN';
   lastCheckedAt: string | null;
+  lastBalanceMinor?: number | null;
+  lastBalanceCheckedAt?: string | null;
   lastError: string | null;
   errorCount?: number;
 }

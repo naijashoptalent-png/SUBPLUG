@@ -816,6 +816,7 @@ export class SmeApiProvider implements VtuProvider {
       return {
         healthy: true,
         message: `SME API reachable. Provider wallet balance: ${formatNaira(nairaToMinor(balance))}.`,
+        balanceMinor: nairaToMinor(balance),
       };
     } catch (error) {
       return { healthy: false, message: error instanceof Error ? error.message : 'SME API is unreachable' };

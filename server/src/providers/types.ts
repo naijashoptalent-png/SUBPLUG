@@ -128,5 +128,5 @@ export interface VtuProvider {
   /** Must never be retried automatically. */
   purchase(request: ProviderPurchaseRequest): Promise<ProviderPurchaseResult>;
   queryStatus(reference: string): Promise<ProviderStatusResult>;
-  healthCheck(): Promise<{ healthy: boolean; message?: string }>;
+  healthCheck(): Promise<{ healthy: boolean; message?: string; balanceMinor?: number }>;
 }
