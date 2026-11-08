@@ -132,10 +132,11 @@ async function confirmVirtualAccountTransfer(
   if (!transactionId) return { status: 'PENDING' as const, reason: 'Missing Flutterwave transaction ID' };
 
   const verification = await provider.verifyTransaction(transactionId);
-  return creditVirtualAccountTransfer(String(account._id), reference, verification, true);
+  return creditVirtualAccountTransfer(provider, String(account._id), reference, verification, true);
 }
 
 async function creditVirtualAccountTransfer(
+  provider: FlutterwaveProvider,
   userId: string,
   reference: string,
   verification: PaymentVerificationResult,
@@ -149,14 +150,63 @@ async function creditVirtualAccountTransfer(
     return { status: 'REQUIRES_REVIEW' as const, reason: 'Virtual-account payment reference mismatch' };
   }
 
+  // Virtual-account payments do not go through initializeFunding(), so create
+  // their funding record here. Without this, the ledger is credited but the
+  // payment is absent from the customer's and admin's funding history.
+  const idempotencyKey = `flutterwave-virtual-account:${verification.gatewayTransactionId}`;
+  let funding = await WalletFunding.findOne({ userId, idempotencyKey });
+  if (!funding) {
+    try {
+      funding = await WalletFunding.create({
+        reference: generateReference('FUND'),
+        userId,
+        amountMinor: verification.amountMinor,
+        status: 'PENDING',
+        gateway: 'flutterwave',
+        gatewayReference: verification.gatewayTransactionId,
+        idempotencyKey,
+        requestHash: hashRequestPayload({
+          virtualAccountReference: reference,
+          transactionId: verification.gatewayTransactionId,
+          amountMinor: verification.amountMinor,
+        }),
+        isSandbox: provider.isSandbox,
+        gatewayPayload: sanitizeProviderPayload(verification.raw) as Record<string, unknown>,
+      });
+    } catch (error) {
+      // The unique (userId, idempotencyKey) index makes concurrent webhook
+      // deliveries safe. Reuse the record written by the winning request.
+      if ((error as { code?: number }).code !== 11000) throw error;
+      funding = await WalletFunding.findOne({ userId, idempotencyKey });
+      if (!funding) throw error;
+    }
+  }
+
+  if (funding.status === 'SUCCESSFUL') {
+    return { status: 'SUCCESSFUL' as const, amountMinor: funding.amountMinor };
+  }
+
   await creditWallet({
     userId,
     amountMinor: verification.amountMinor,
     type: 'FUNDING_CREDIT',
-    idempotencyKey: `flutterwave-virtual-account:${verification.gatewayTransactionId}`,
+    idempotencyKey,
     description: 'Flutterwave bank transfer funding',
     metadata: { gateway: 'flutterwave', transactionId: verification.gatewayTransactionId, virtualAccountReference: reference },
   });
+  await WalletFunding.updateOne(
+    { _id: funding._id, status: { $ne: 'SUCCESSFUL' } },
+    {
+      $set: {
+        status: 'SUCCESSFUL',
+        paidAt: verification.paidAt ?? new Date(),
+        verifiedAt: new Date(),
+        creditedAt: new Date(),
+        failureReason: null,
+        reviewReason: null,
+      },
+    }
+  );
   if (sendNotification) {
     await notify({
       userId,
@@ -186,7 +236,7 @@ export async function reconcileVirtualAccountTransfers(limit = 100) {
     if (!reference) continue;
     try {
       const verification = await provider.verify(reference);
-      const result = await creditVirtualAccountTransfer(String(user._id), reference, verification);
+      const result = await creditVirtualAccountTransfer(provider, String(user._id), reference, verification);
       if (result.status === 'SUCCESSFUL') credited += 1;
     } catch (error) {
       logger.warn({ err: error, userId: String(user._id) }, 'Virtual-account reconciliation failed');
