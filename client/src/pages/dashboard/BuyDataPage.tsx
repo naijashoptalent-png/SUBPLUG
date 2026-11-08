@@ -20,6 +20,7 @@ import { FormError } from '@/components/ui/FormError';
 import { useDataPlans } from '@/hooks/useCatalogue';
 import { usePurchaseData } from '@/hooks/usePurchases';
 import { useWallet } from '@/hooks/useWallet';
+import { useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 import { dataFormSchema, type DataForm } from '@/lib/schemas';
 import { formatNaira } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
@@ -39,6 +40,7 @@ export function BuyDataPage() {
   const [activeCategory, setActiveCategory] = useState('ALL');
   const idempotencyKey = useRef(newIdempotencyKey('data'));
   const walletQuery = useWallet();
+  const { isBalanceHidden } = useBalanceVisibility();
   const purchase = usePurchaseData();
 
   const form = useForm<DataForm>({
@@ -288,7 +290,7 @@ export function BuyDataPage() {
               </div>
               <div className="mt-1.5 flex items-center justify-between gap-3 text-[11px] text-subtle">
                 <span>Wallet balance</span>
-                <span>{walletQuery.data ? formatNaira(walletQuery.data.wallet.balanceMinor) : '—'}</span>
+                <span>{walletQuery.data ? (isBalanceHidden ? '••••••' : formatNaira(walletQuery.data.wallet.balanceMinor)) : '—'}</span>
               </div>
             </div>
 

@@ -13,6 +13,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   Banknote,
+  Eye,
+  EyeOff,
   Gift,
   Phone,
   Plus,
@@ -33,6 +35,7 @@ import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { DedicatedAccountCard } from '@/components/wallet/DedicatedAccountCard';
 import { useOpenWalletFunding } from '@/components/wallet/WalletFundingContext';
+import { useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 
 const quickActions = [
   { to: '/dashboard/airtime', label: 'Airtime', copy: 'Top up a phone', icon: Phone, classes: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
@@ -45,6 +48,7 @@ export function OverviewPage() {
   const { user } = useAuth();
   const summaryQuery = useDashboardSummary();
   const openWalletFunding = useOpenWalletFunding();
+  const { isBalanceHidden, toggleBalanceVisibility } = useBalanceVisibility();
   const summary = summaryQuery.data;
   const monthlySpendMinor = summary?.monthlyActivity.reduce((total, day) => total + day.amountMinor, 0) ?? 0;
 
@@ -81,16 +85,26 @@ export function OverviewPage() {
                   </span>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/65">Wallet balance</p>
                 </div>
-                <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/60">
-                  {summary?.wallet.currency ?? 'NGN'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleBalanceVisibility}
+                    className="grid h-8 w-8 place-items-center rounded-full border border-white/15 text-white/70 transition hover:bg-white/10 hover:text-white"
+                    aria-label={isBalanceHidden ? 'Show wallet balance' : 'Hide wallet balance'}
+                  >
+                    {isBalanceHidden ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
+                  </button>
+                  <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/60">
+                    {summary?.wallet.currency ?? 'NGN'}
+                  </span>
+                </div>
               </div>
 
               {summaryQuery.isLoading ? (
                 <div className="mt-6 h-11 w-48 animate-pulse rounded-xl bg-white/10" />
               ) : (
                 <p className="mt-5 font-display text-4xl font-semibold tracking-tight sm:text-[2.8rem]">
-                  {formatNaira(summary?.wallet.balanceMinor ?? 0)}
+                  {isBalanceHidden ? '••••••' : formatNaira(summary?.wallet.balanceMinor ?? 0)}
                 </p>
               )}
               <p className="mt-1 text-xs text-white/55">

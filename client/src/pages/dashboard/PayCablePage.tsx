@@ -19,6 +19,7 @@ import { FormError } from '@/components/ui/FormError';
 import { useCablePackages, useCableProviders, useServices, useValidateSmartcard, type MeterValidation } from '@/hooks/useCatalogue';
 import { usePurchaseCable } from '@/hooks/usePurchases';
 import { useWallet } from '@/hooks/useWallet';
+import { useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 import { cableFormSchema, type CableForm } from '@/lib/schemas';
 import { formatNaira } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
@@ -37,6 +38,7 @@ export function PayCablePage() {
   const validateSmartcard = useValidateSmartcard();
   const purchase = usePurchaseCable();
   const walletQuery = useWallet();
+  const { isBalanceHidden } = useBalanceVisibility();
 
   const form = useForm<CableForm>({
     resolver: zodResolver(cableFormSchema),
@@ -305,7 +307,7 @@ export function PayCablePage() {
 
             <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted">
-                Wallet: {walletQuery.data ? formatNaira(walletQuery.data.wallet.balanceMinor) : '—'}
+                Wallet: {walletQuery.data ? (isBalanceHidden ? '••••••' : formatNaira(walletQuery.data.wallet.balanceMinor)) : '—'}
               </p>
               <Button
                 type="submit"

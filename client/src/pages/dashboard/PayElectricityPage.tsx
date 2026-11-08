@@ -20,6 +20,7 @@ import { ErrorState, Skeleton } from '@/components/ui/States';
 import { useElectricityProviders, useServices, useValidateMeter, type MeterValidation } from '@/hooks/useCatalogue';
 import { usePurchaseElectricity } from '@/hooks/usePurchases';
 import { useWallet } from '@/hooks/useWallet';
+import { useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 import { electricityFormSchema, type ElectricityForm } from '@/lib/schemas';
 import { formatNaira, parseNairaToMinor } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
@@ -40,6 +41,7 @@ export function PayElectricityPage() {
   const validateMeter = useValidateMeter();
   const purchase = usePurchaseElectricity();
   const walletQuery = useWallet();
+  const { isBalanceHidden } = useBalanceVisibility();
 
   const form = useForm<ElectricityForm>({
     resolver: zodResolver(electricityFormSchema),
@@ -296,7 +298,7 @@ export function PayElectricityPage() {
 
             <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted">
-                Wallet: {walletQuery.data ? formatNaira(walletQuery.data.wallet.balanceMinor) : '—'}
+                Wallet: {walletQuery.data ? (isBalanceHidden ? '••••••' : formatNaira(walletQuery.data.wallet.balanceMinor)) : '—'}
               </p>
               <Button
                 type="submit"

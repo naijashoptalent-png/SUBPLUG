@@ -4,6 +4,8 @@ import {
   Bell,
   ChevronRight,
   CircleHelp,
+  Eye,
+  EyeOff,
   Gift,
   History,
   LayoutDashboard,
@@ -28,6 +30,7 @@ import { NotificationBell } from './NotificationBell';
 import { UserMenu } from './UserMenu';
 import { FundWalletDialog } from '@/components/wallet/FundWalletDialog';
 import { WalletFundingProvider } from '@/components/wallet/WalletFundingContext';
+import { BalanceVisibilityProvider, useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { formatNaira } from '@/lib/format';
@@ -75,6 +78,7 @@ function SidebarContent({
   onFundWallet: () => void;
 }) {
   const { user, isStaff } = useAuth();
+  const { isBalanceHidden } = useBalanceVisibility();
   const { data: wallet } = useWallet();
   const balance = wallet?.wallet.balanceMinor;
 
@@ -90,7 +94,7 @@ function SidebarContent({
         <div className="rounded-2xl bg-brand-800 p-4 text-white dark:bg-brand-600">
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">Wallet balance</p>
           <p className="mt-1 font-display text-2xl font-semibold tracking-tight">
-            {balance === undefined ? '₦—' : formatNaira(balance)}
+            {balance === undefined ? '₦—' : isBalanceHidden ? '••••••' : formatNaira(balance)}
           </p>
           <button
             type="button"
@@ -198,6 +202,19 @@ export function DashboardLayout() {
   const location = useLocation();
   const title = usePageTitle(location.pathname);
   const { data: wallet } = useWallet();
+  const { user } = useAuth();
+  const [isBalanceHidden, setIsBalanceHidden] = useState(false);
+
+  useEffect(() => {
+    const key = user ? `subplug:balance-hidden:${user.id}` : null;
+    setIsBalanceHidden(key ? window.localStorage.getItem(key) === 'true' : false);
+  }, [user]);
+
+  const toggleBalanceVisibility = () => {
+    const next = !isBalanceHidden;
+    setIsBalanceHidden(next);
+    if (user) window.localStorage.setItem(`subplug:balance-hidden:${user.id}`, String(next));
+  };
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -217,6 +234,7 @@ export function DashboardLayout() {
   }, [drawerOpen]);
 
   return (
+    <BalanceVisibilityProvider value={{ isBalanceHidden, toggleBalanceVisibility }}>
     <div className="app-shell min-h-dvh bg-surface">
       <a
         href="#main"
@@ -280,8 +298,16 @@ export function DashboardLayout() {
                 aria-label="Wallet balance, open wallet"
               >
                 <WalletIcon className="h-3.5 w-3.5 text-brand-600 dark:text-brand-300" aria-hidden="true" />
-                {wallet ? formatNaira(wallet.wallet.balanceMinor) : '₦—'}
+                {wallet ? (isBalanceHidden ? '••••••' : formatNaira(wallet.wallet.balanceMinor)) : '₦—'}
               </Link>
+              <button
+                type="button"
+                onClick={toggleBalanceVisibility}
+                className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-raised text-muted transition hover:border-brand-400/50 hover:text-ink"
+                aria-label={isBalanceHidden ? 'Show wallet balance' : 'Hide wallet balance'}
+              >
+                {isBalanceHidden ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
+              </button>
               <button
                 type="button"
                 onClick={() => setFundOpen(true)}
@@ -343,5 +369,6 @@ export function DashboardLayout() {
       <FundWalletDialog open={fundOpen} onOpenChange={setFundOpen} />
       </WalletFundingProvider>
     </div>
+    </BalanceVisibilityProvider>
   );
 }

@@ -19,6 +19,7 @@ import { FormError } from '@/components/ui/FormError';
 import { useAirtimeQuote } from '@/hooks/useCatalogue';
 import { usePurchaseAirtime } from '@/hooks/usePurchases';
 import { useWallet } from '@/hooks/useWallet';
+import { useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 import { airtimeFormSchema, type AirtimeForm } from '@/lib/schemas';
 import { formatNaira, parseNairaToMinor } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
@@ -36,6 +37,7 @@ const presets = [100, 200, 500, 1000, 2000, 5000];
 
 export function BuyAirtimePage() {
   const walletQuery = useWallet();
+  const { isBalanceHidden } = useBalanceVisibility();
   const purchase = usePurchaseAirtime();
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Transaction | null>(null);
@@ -204,7 +206,7 @@ export function BuyAirtimePage() {
             <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-center gap-2 text-xs text-muted">
                 <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
-                Balance: {balance === undefined ? '—' : formatNaira(balance)}
+                Balance: {balance === undefined ? '—' : isBalanceHidden ? '••••••' : formatNaira(balance)}
               </p>
               <Button
                 type="submit"

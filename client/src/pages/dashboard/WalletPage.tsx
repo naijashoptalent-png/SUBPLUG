@@ -6,6 +6,8 @@ import {
   ArrowUpRight,
   Banknote,
   ExternalLink,
+  Eye,
+  EyeOff,
   Plus,
   ReceiptText,
   Wallet as WalletIcon,
@@ -18,6 +20,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useOpenWalletFunding } from '@/components/wallet/WalletFundingContext';
+import { useBalanceVisibility } from '@/components/wallet/BalanceVisibilityContext';
 import { SandboxNotice } from '@/components/ui/SandboxNotice';
 import { useFundings, useLedger, useWallet } from '@/hooks/useWallet';
 import { formatNaira, formatPaymentGateway, formatRelative, LEDGER_LABELS } from '@/lib/format';
@@ -35,6 +38,7 @@ const ledgerTypes: Array<{ value: '' | LedgerType; label: string }> = [
 
 export function WalletPage() {
   const openWalletFunding = useOpenWalletFunding();
+  const { isBalanceHidden, toggleBalanceVisibility } = useBalanceVisibility();
   const [tab, setTab] = useState<'ledger' | 'fundings'>('ledger');
   const [page, setPage] = useState(1);
   const [type, setType] = useState<'' | LedgerType>('');
@@ -87,15 +91,25 @@ export function WalletPage() {
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="balance-card relative overflow-hidden rounded-[1.75rem] p-6 text-white shadow-glow md:col-span-1">
           <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full border border-white/10" aria-hidden="true" />
-          <div className="flex items-center gap-2 text-white/70">
-            <WalletIcon className="h-4 w-4" aria-hidden="true" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">Available balance</span>
+          <div className="flex items-center justify-between gap-2 text-white/70">
+            <div className="flex items-center gap-2">
+              <WalletIcon className="h-4 w-4" aria-hidden="true" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">Available balance</span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleBalanceVisibility}
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/15 transition hover:bg-white/10 hover:text-white"
+              aria-label={isBalanceHidden ? 'Show wallet balance' : 'Hide wallet balance'}
+            >
+              {isBalanceHidden ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
+            </button>
           </div>
           {walletQuery.isLoading ? (
             <div className="mt-4 h-10 w-40 animate-pulse rounded-lg bg-white/10" />
           ) : (
             <p className="mt-3 font-display text-4xl font-semibold tracking-tight">
-              {formatNaira(wallet?.wallet.balanceMinor ?? 0)}
+              {isBalanceHidden ? '••••••' : formatNaira(wallet?.wallet.balanceMinor ?? 0)}
             </p>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
